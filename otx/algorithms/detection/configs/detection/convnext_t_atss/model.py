@@ -10,22 +10,20 @@ _base_ = [
     "../../base/models/detector.py",
 ]
 
-__checkpoint_file = 'https://download.openmmlab.com/mmclassification/v0/convnext/"\
-"downstream/convnext-tiny_3rdparty_32xb128-noema_in1k_20220301-795e9634.pth'
+__checkpoint_file = "https://download.openmmlab.com/mmclassification/v0/convnext/\
+downstream/convnext-tiny_3rdparty_32xb128-noema_in1k_20220301-795e9634.pth"
 
 model = dict(
     type="CustomATSS",
     backbone=dict(
-        _delete_=True,
-        type='mmpretrain.ConvNeXt',
-        arch='tiny',
+        type="mmcls.ConvNeXt",
+        arch="tiny",
         out_indices=[0, 1, 2, 3],
         drop_path_rate=0.4,
         layer_scale_init_value=1.0,
         gap_before_final_norm=False,
-        init_cfg=dict(
-            type='Pretrained', checkpoint=__checkpoint_file,
-            prefix='backbone.')),
+        init_cfg=dict(type="Pretrained", checkpoint=__checkpoint_file, prefix="backbone."),
+    ),
     neck=dict(
         type="FPN",
         in_channels=[96, 192, 384, 768],
