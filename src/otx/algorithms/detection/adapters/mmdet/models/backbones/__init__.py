@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: Apache-2.0
 #
 
-from . import imgclsmob
+from . import imgclsmob, mmcls_backbone
 from .mmov_backbone import MMOVBackbone
 
-__all__ = ["imgclsmob", "MMOVBackbone"]
+__all__ = ["imgclsmob", "MMOVBackbone", "mmcls_backbone"]
