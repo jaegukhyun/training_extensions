@@ -6,7 +6,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
 
-    <title>Adapters &#8212; OpenVINO™ Training Extensions 1.4.0 documentation</title>
+    <title>Adapters &#8212; OpenVINO™ Training Extensions 1.5.0 documentation</title>
   
   
   
@@ -276,6 +276,7 @@
 <li class="toctree-l3"><a class="reference internal" href="../../../../explanation/algorithms/action/action_detection.html">Action Detection</a></li>
 </ul>
 </li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../explanation/algorithms/visual_prompting/index.html">Visual Prompting</a></li>
 </ul>
 </li>
 <li class="toctree-l1 has-children"><a class="reference internal" href="../../../../explanation/additional_features/index.html">Additional Features</a><input class="toctree-checkbox" id="toctree-checkbox-9" name="toctree-checkbox-9" type="checkbox"/><label class="toctree-toggle" for="toctree-checkbox-9"><i class="fa-solid fa-chevron-down"></i></label><ul>
@@ -285,6 +286,7 @@
 <li class="toctree-l2"><a class="reference internal" href="../../../../explanation/additional_features/xai.html">Explainable AI (XAI)</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../../explanation/additional_features/noisy_label_detection.html">Noisy Label Detection</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../../explanation/additional_features/fast_data_loading.html">Fast Data Loading</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../explanation/additional_features/tiling.html">Improve Small Object Detection with Image Tiling</a></li>
 </ul>
 </li>
 </ul>
@@ -458,57 +460,10 @@
 <h1>Adapters<a class="headerlink" href="#adapters" title="Permalink to this heading">#</a></h1>
 <div class="toctree-wrapper compound">
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="mmcls.html">mmclassification</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="mmcls.html#otx.algorithms.classification.adapters.mmcls.BYOL"><code class="docutils literal notranslate"><span class="pre">BYOL</span></code></a><ul>
-<li class="toctree-l3"><a class="reference internal" href="mmcls.html#otx.algorithms.classification.adapters.mmcls.BYOL.forward"><code class="docutils literal notranslate"><span class="pre">BYOL.forward()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="mmcls.html#otx.algorithms.classification.adapters.mmcls.BYOL.init_weights"><code class="docutils literal notranslate"><span class="pre">BYOL.init_weights()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="mmcls.html#otx.algorithms.classification.adapters.mmcls.BYOL.momentum_update"><code class="docutils literal notranslate"><span class="pre">BYOL.momentum_update()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="mmcls.html#otx.algorithms.classification.adapters.mmcls.BYOL.state_dict_hook"><code class="docutils literal notranslate"><span class="pre">BYOL.state_dict_hook()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="mmcls.html#otx.algorithms.classification.adapters.mmcls.BYOL.train_step"><code class="docutils literal notranslate"><span class="pre">BYOL.train_step()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="mmcls.html#otx.algorithms.classification.adapters.mmcls.BYOL.val_step"><code class="docutils literal notranslate"><span class="pre">BYOL.val_step()</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="mmcls.html">mmclassification</a><ul class="simple">
 </ul>
 </li>
-<li class="toctree-l2"><a class="reference internal" href="mmcls.html#otx.algorithms.classification.adapters.mmcls.ConstrastiveHead"><code class="docutils literal notranslate"><span class="pre">ConstrastiveHead</span></code></a><ul>
-<li class="toctree-l3"><a class="reference internal" href="mmcls.html#otx.algorithms.classification.adapters.mmcls.ConstrastiveHead.forward"><code class="docutils literal notranslate"><span class="pre">ConstrastiveHead.forward()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="mmcls.html#otx.algorithms.classification.adapters.mmcls.ConstrastiveHead.init_weights"><code class="docutils literal notranslate"><span class="pre">ConstrastiveHead.init_weights()</span></code></a></li>
-</ul>
-</li>
-<li class="toctree-l2"><a class="reference internal" href="mmcls.html#otx.algorithms.classification.adapters.mmcls.LARS"><code class="docutils literal notranslate"><span class="pre">LARS</span></code></a><ul>
-<li class="toctree-l3"><a class="reference internal" href="mmcls.html#otx.algorithms.classification.adapters.mmcls.LARS.step"><code class="docutils literal notranslate"><span class="pre">LARS.step()</span></code></a></li>
-</ul>
-</li>
-<li class="toctree-l2"><a class="reference internal" href="mmcls.html#otx.algorithms.classification.adapters.mmcls.OTXClsDataset"><code class="docutils literal notranslate"><span class="pre">OTXClsDataset</span></code></a><ul>
-<li class="toctree-l3"><a class="reference internal" href="mmcls.html#otx.algorithms.classification.adapters.mmcls.OTXClsDataset.class_accuracy"><code class="docutils literal notranslate"><span class="pre">OTXClsDataset.class_accuracy()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="mmcls.html#otx.algorithms.classification.adapters.mmcls.OTXClsDataset.evaluate"><code class="docutils literal notranslate"><span class="pre">OTXClsDataset.evaluate()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="mmcls.html#otx.algorithms.classification.adapters.mmcls.OTXClsDataset.get_gt_labels"><code class="docutils literal notranslate"><span class="pre">OTXClsDataset.get_gt_labels()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="mmcls.html#otx.algorithms.classification.adapters.mmcls.OTXClsDataset.get_indices"><code class="docutils literal notranslate"><span class="pre">OTXClsDataset.get_indices()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="mmcls.html#otx.algorithms.classification.adapters.mmcls.OTXClsDataset.load_annotations"><code class="docutils literal notranslate"><span class="pre">OTXClsDataset.load_annotations()</span></code></a></li>
-</ul>
-</li>
-<li class="toctree-l2"><a class="reference internal" href="mmcls.html#otx.algorithms.classification.adapters.mmcls.SelfSLDataset"><code class="docutils literal notranslate"><span class="pre">SelfSLDataset</span></code></a><ul>
-<li class="toctree-l3"><a class="reference internal" href="mmcls.html#otx.algorithms.classification.adapters.mmcls.SelfSLDataset.CLASSES"><code class="docutils literal notranslate"><span class="pre">SelfSLDataset.CLASSES</span></code></a></li>
-</ul>
-</li>
-<li class="toctree-l2"><a class="reference internal" href="mmcls.html#otx.algorithms.classification.adapters.mmcls.SelfSLMLP"><code class="docutils literal notranslate"><span class="pre">SelfSLMLP</span></code></a><ul>
-<li class="toctree-l3"><a class="reference internal" href="mmcls.html#otx.algorithms.classification.adapters.mmcls.SelfSLMLP.forward"><code class="docutils literal notranslate"><span class="pre">SelfSLMLP.forward()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="mmcls.html#otx.algorithms.classification.adapters.mmcls.SelfSLMLP.init_weights"><code class="docutils literal notranslate"><span class="pre">SelfSLMLP.init_weights()</span></code></a></li>
-</ul>
-</li>
-<li class="toctree-l2"><a class="reference internal" href="mmcls.html#otx.algorithms.classification.adapters.mmcls.task.MMClassificationTask"><code class="docutils literal notranslate"><span class="pre">MMClassificationTask</span></code></a><ul>
-<li class="toctree-l3"><a class="reference internal" href="mmcls.html#otx.algorithms.classification.adapters.mmcls.task.MMClassificationTask.build_model"><code class="docutils literal notranslate"><span class="pre">MMClassificationTask.build_model()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="mmcls.html#otx.algorithms.classification.adapters.mmcls.task.MMClassificationTask.configure"><code class="docutils literal notranslate"><span class="pre">MMClassificationTask.configure()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="mmcls.html#otx.algorithms.classification.adapters.mmcls.task.MMClassificationTask.update_override_configurations"><code class="docutils literal notranslate"><span class="pre">MMClassificationTask.update_override_configurations()</span></code></a></li>
-</ul>
-</li>
-</ul>
-</li>
-<li class="toctree-l1"><a class="reference internal" href="openvino.html">openvino</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="openvino.html#otx.algorithms.classification.adapters.openvino.model_wrappers.OTXClassification"><code class="docutils literal notranslate"><span class="pre">OTXClassification</span></code></a><ul>
-<li class="toctree-l3"><a class="reference internal" href="openvino.html#otx.algorithms.classification.adapters.openvino.model_wrappers.OTXClassification.parameters"><code class="docutils literal notranslate"><span class="pre">OTXClassification.parameters()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="openvino.html#otx.algorithms.classification.adapters.openvino.model_wrappers.OTXClassification.postprocess"><code class="docutils literal notranslate"><span class="pre">OTXClassification.postprocess()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="openvino.html#otx.algorithms.classification.adapters.openvino.model_wrappers.OTXClassification.postprocess_aux_outputs"><code class="docutils literal notranslate"><span class="pre">OTXClassification.postprocess_aux_outputs()</span></code></a></li>
-</ul>
-</li>
+<li class="toctree-l1"><a class="reference internal" href="openvino.html">openvino</a><ul class="simple">
 </ul>
 </li>
 </ul>

@@ -6,7 +6,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
 
-    <title>Adapters &#8212; OpenVINO™ Training Extensions 1.4.0 documentation</title>
+    <title>Adapters &#8212; OpenVINO™ Training Extensions 1.5.0 documentation</title>
   
   
   
@@ -276,6 +276,7 @@
 <li class="toctree-l3"><a class="reference internal" href="../../../../explanation/algorithms/action/action_detection.html">Action Detection</a></li>
 </ul>
 </li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../explanation/algorithms/visual_prompting/index.html">Visual Prompting</a></li>
 </ul>
 </li>
 <li class="toctree-l1 has-children"><a class="reference internal" href="../../../../explanation/additional_features/index.html">Additional Features</a><input class="toctree-checkbox" id="toctree-checkbox-9" name="toctree-checkbox-9" type="checkbox"/><label class="toctree-toggle" for="toctree-checkbox-9"><i class="fa-solid fa-chevron-down"></i></label><ul>
@@ -285,6 +286,7 @@
 <li class="toctree-l2"><a class="reference internal" href="../../../../explanation/additional_features/xai.html">Explainable AI (XAI)</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../../explanation/additional_features/noisy_label_detection.html">Noisy Label Detection</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../../explanation/additional_features/fast_data_loading.html">Fast Data Loading</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../explanation/additional_features/tiling.html">Improve Small Object Detection with Image Tiling</a></li>
 </ul>
 </li>
 </ul>
@@ -458,27 +460,10 @@
 <h1>Adapters<a class="headerlink" href="#adapters" title="Permalink to this heading">#</a></h1>
 <div class="toctree-wrapper compound">
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="mmdet.html">mmdetection</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="mmdet.html#otx.algorithms.detection.adapters.mmdet.OTXDetDataset"><code class="docutils literal notranslate"><span class="pre">OTXDetDataset</span></code></a><ul>
-<li class="toctree-l3"><a class="reference internal" href="mmdet.html#otx.algorithms.detection.adapters.mmdet.OTXDetDataset.evaluate"><code class="docutils literal notranslate"><span class="pre">OTXDetDataset.evaluate()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="mmdet.html#otx.algorithms.detection.adapters.mmdet.OTXDetDataset.get_ann_info"><code class="docutils literal notranslate"><span class="pre">OTXDetDataset.get_ann_info()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="mmdet.html#otx.algorithms.detection.adapters.mmdet.OTXDetDataset.pre_pipeline"><code class="docutils literal notranslate"><span class="pre">OTXDetDataset.pre_pipeline()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="mmdet.html#otx.algorithms.detection.adapters.mmdet.OTXDetDataset.prepare_test_img"><code class="docutils literal notranslate"><span class="pre">OTXDetDataset.prepare_test_img()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="mmdet.html#otx.algorithms.detection.adapters.mmdet.OTXDetDataset.prepare_train_img"><code class="docutils literal notranslate"><span class="pre">OTXDetDataset.prepare_train_img()</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="mmdet.html">mmdetection</a><ul class="simple">
 </ul>
 </li>
-</ul>
-</li>
-<li class="toctree-l1"><a class="reference internal" href="openvino.html">openvino</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="openvino.html#otx.algorithms.detection.adapters.openvino.model_wrappers.OTXMaskRCNNModel"><code class="docutils literal notranslate"><span class="pre">OTXMaskRCNNModel</span></code></a><ul>
-<li class="toctree-l3"><a class="reference internal" href="openvino.html#otx.algorithms.detection.adapters.openvino.model_wrappers.OTXMaskRCNNModel.disable_mask_resizing"><code class="docutils literal notranslate"><span class="pre">OTXMaskRCNNModel.disable_mask_resizing()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="openvino.html#otx.algorithms.detection.adapters.openvino.model_wrappers.OTXMaskRCNNModel.get_saliency_map_from_prediction"><code class="docutils literal notranslate"><span class="pre">OTXMaskRCNNModel.get_saliency_map_from_prediction()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="openvino.html#otx.algorithms.detection.adapters.openvino.model_wrappers.OTXMaskRCNNModel.get_tiling_saliency_map_from_prediction"><code class="docutils literal notranslate"><span class="pre">OTXMaskRCNNModel.get_tiling_saliency_map_from_prediction()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="openvino.html#otx.algorithms.detection.adapters.openvino.model_wrappers.OTXMaskRCNNModel.postprocess"><code class="docutils literal notranslate"><span class="pre">OTXMaskRCNNModel.postprocess()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="openvino.html#otx.algorithms.detection.adapters.openvino.model_wrappers.OTXMaskRCNNModel.segm_postprocess"><code class="docutils literal notranslate"><span class="pre">OTXMaskRCNNModel.segm_postprocess()</span></code></a></li>
-</ul>
-</li>
-<li class="toctree-l2"><a class="reference internal" href="openvino.html#otx.algorithms.detection.adapters.openvino.model_wrappers.OTXSSDModel"><code class="docutils literal notranslate"><span class="pre">OTXSSDModel</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="openvino.html">openvino</a><ul class="simple">
 </ul>
 </li>
 </ul>

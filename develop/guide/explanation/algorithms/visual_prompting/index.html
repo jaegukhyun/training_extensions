@@ -6,7 +6,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
 
-    <title>Action Detection &#8212; OpenVINO™ Training Extensions 1.5.0 documentation</title>
+    <title>Visual Prompting &#8212; OpenVINO™ Training Extensions 1.5.0 documentation</title>
   
   
   
@@ -42,11 +42,11 @@
     <script src="../../../../_static/sphinx_highlight.js"></script>
     <script src="../../../../_static/clipboard.min.js"></script>
     <script src="../../../../_static/copybutton.js"></script>
-    <script>DOCUMENTATION_OPTIONS.pagename = 'guide/explanation/algorithms/action/action_detection';</script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'guide/explanation/algorithms/visual_prompting/index';</script>
     <link rel="index" title="Index" href="../../../../genindex.html" />
     <link rel="search" title="Search" href="../../../../search.html" />
-    <link rel="next" title="Visual Prompting" href="../visual_prompting/index.html" />
-    <link rel="prev" title="Action Classification" href="action_classification.html" />
+    <link rel="next" title="Additional Features" href="../../additional_features/index.html" />
+    <link rel="prev" title="Action Detection" href="../action/action_detection.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="docsearch:language" content="en">
   </head>
@@ -271,12 +271,12 @@
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="../anomaly/index.html">Anomaly Detection</a></li>
-<li class="toctree-l2 current active has-children"><a class="reference internal" href="index.html">Action Recognition</a><input checked="" class="toctree-checkbox" id="toctree-checkbox-8" name="toctree-checkbox-8" type="checkbox"/><label class="toctree-toggle" for="toctree-checkbox-8"><i class="fa-solid fa-chevron-down"></i></label><ul class="current">
-<li class="toctree-l3"><a class="reference internal" href="action_classification.html">Action Classification</a></li>
-<li class="toctree-l3 current active"><a class="current reference internal" href="#">Action Detection</a></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../action/index.html">Action Recognition</a><input class="toctree-checkbox" id="toctree-checkbox-8" name="toctree-checkbox-8" type="checkbox"/><label class="toctree-toggle" for="toctree-checkbox-8"><i class="fa-solid fa-chevron-down"></i></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="../action/action_classification.html">Action Classification</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../action/action_detection.html">Action Detection</a></li>
 </ul>
 </li>
-<li class="toctree-l2"><a class="reference internal" href="../visual_prompting/index.html">Visual Prompting</a></li>
+<li class="toctree-l2 current active"><a class="current reference internal" href="#">Visual Prompting</a></li>
 </ul>
 </li>
 <li class="toctree-l1 has-children"><a class="reference internal" href="../../additional_features/index.html">Additional Features</a><input class="toctree-checkbox" id="toctree-checkbox-9" name="toctree-checkbox-9" type="checkbox"/><label class="toctree-toggle" for="toctree-checkbox-9"><i class="fa-solid fa-chevron-down"></i></label><ul>
@@ -456,30 +456,61 @@
             
             <article class="bd-article" role="main">
               
-  <section id="action-detection">
-<h1>Action Detection<a class="headerlink" href="#action-detection" title="Permalink to this heading">#</a></h1>
-<p>Sptio-Temporal action detection is the problem of localizing the actor(spatial detection) and action(temporal detection). We solve this problem by combining 3D action classification backbone and 2D object detection model. We can combine these two models in several ways. Currently, we support the simplest way. The other ways will be supported in near future.</p>
-<p>X3D + Fast-RCNN architecture comes from <a class="reference external" href="https://arxiv.org/abs/2004.04730">X3D paper</a>. This model requires pre-computed actor proposals. Actor pre-proposals can be obtained from <a class="reference external" href="https://cocodataset.org/#home">COCO</a> pre-trained 2D object detector (e.g. <a class="reference external" href="https://arxiv.org/abs/1506.01497">Faster-RCNN</a>, <a class="reference external" href="https://arxiv.org/abs/1912.02424">ATSS</a>). If the custom dataset requires finetuning of 2d object detector, please refer <a class="reference internal" href="../object_detection/object_detection.html"><span class="doc">otx.algorithms.detection</span></a>. Region-of-interest (RoI) features are extracted at the last feature map of X3D by extending a 2D proposal at a keyframe into a 3D RoI by replicating it along the temporal axis. The RoI features fed into the roi head of Fast-RCNN.</p>
-<p>For better transfer learning we use the following algorithm components:</p>
-<ul class="simple">
-<li><p><code class="docutils literal notranslate"><span class="pre">Augmentations</span></code>: We use only random crop and random flip for the training pipeline</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">Optimizer</span></code>: We use <a class="reference external" href="https://en.wikipedia.org/wiki/Stochastic_gradient_descent">SGD</a> optimizer with the weight decay set to <strong>1e-4</strong> and momentum set to <strong>0.9</strong>.</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">Loss</span> <span class="pre">functions</span></code>: For the multi-label case binary cross entropy loss is used. In the other case, <a class="reference external" href="https://en.wikipedia.org/wiki/Cross_entropy">Cross Entropy Loss</a> is used for the categories classification.</p></li>
+  <section id="visual-prompting">
+<h1>Visual Prompting<a class="headerlink" href="#visual-prompting" title="Permalink to this heading">#</a></h1>
+<p>Visual prompting is a computer vision task that uses a combination of an image and prompts, such as texts, bounding boxes, points, and so on to troubleshoot problems.
+Using these useful prompts, the main purpose of this task is to obtain labels from unlabeled datasets, and to use generated label information on particular domains or to develop a new model with the generated information.</p>
+<p>This section examines the solutions for visual prompting offered by the OpenVINO Training Extensions library.
+<a class="reference external" href="https://arxiv.org/abs/2304.02643">Segment Anything (SAM)</a>, is one of the most famous visual prompting methods and this model will be used to adapt a new dataset domain.
+Because <a class="reference external" href="https://arxiv.org/abs/2304.02643">SAM</a> was trained by using web-scale dataset and has huge backbone network, fine-tuning the whole network is difficult and lots of resources are required.
+Therefore, in this section, we try to fine-tune only mask decoder only for several epochs to increase performance on the new dataset domain.
+For fine-tuning <a class="reference external" href="https://arxiv.org/abs/2304.02643">SAM</a>, we use following algorithms components:</p>
+<ul class="simple" id="visual-prompting-finetuning-pipeline">
+<li><p><code class="docutils literal notranslate"><span class="pre">Pre-processing</span></code>: Resize an image according to the longest axis and pad the rest with zero.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">Optimizer</span></code>: We use <a class="reference external" href="https://arxiv.org/abs/1412.6980">Adam</a> optimizer.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">Loss</span> <span class="pre">function</span></code>: We use standard loss combination, 20 * focal loss + dice loss + iou loss, used in <a class="reference external" href="https://arxiv.org/abs/2304.02643">SAM</a> as it is.</p></li>
+<li><dl class="simple">
+<dt><code class="docutils literal notranslate"><span class="pre">Additional</span> <span class="pre">training</span> <span class="pre">techniques</span></code></dt><dd><ul>
+<li><p><code class="docutils literal notranslate"><span class="pre">Early</span> <span class="pre">stopping</span></code>: To add adaptability to the training pipeline and prevent overfitting. Early stopping will be automatically applied.</p></li>
 </ul>
+</dd>
+</dl>
+</li>
+</ul>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Currently, fine-tuning <a class="reference external" href="https://arxiv.org/abs/2304.02643">SAM</a> with bounding boxes in the OpenVINO Training Extensions is only supported.
+We will support fine-tuning with other prompts (points and texts) and continuous fine-tuning with predicted mask information in the near future.</p>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Currently, Post-Training Quantization (PTQ) for <a class="reference external" href="https://arxiv.org/abs/2304.02643">SAM</a> is only supported, not Quantization Aware Training (QAT).</p>
+</div>
 <section id="dataset-format">
 <h2>Dataset Format<a class="headerlink" href="#dataset-format" title="Permalink to this heading">#</a></h2>
-<p>For the dataset handling inside OpenVINO™ Training Extensions, we use <a class="reference external" href="https://github.com/openvinotoolkit/datumaro">Dataset Management Framework (Datumaro)</a>. Since current Datumaro does not support <a class="reference external" href="http://research.google.com/ava/">AVA dataset</a> format, therefore conversion to <a class="reference external" href="https://opencv.github.io/cvat/docs/manual/advanced/xml_format/">CVAT dataset format</a> is needed. Currently, we offer conversion code from the AVA dataset format to the CVAT dataset format. Please refer
-<a class="reference external" href="https://github.com/openvinotoolkit/training_extensions/blob/develop/src/otx/algorithms/action/utils/convert_public_data_to_cvat.py">this script</a></p>
-<p>If you have your dataset in those formats, then you can simply run using one line of code:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ otx train src/otx/algorithms/action/configs/detection/x3d_fast_rcnn/template.yaml \
-            --train-data-roots &lt;path_to_data_root/train&gt; \
-            --val-data-roots &lt;path_to_data_root/val&gt;
+<p id="visual-prompting-dataset">For the dataset handling inside OpenVINO™ Training Extensions, we use <a class="reference external" href="https://github.com/openvinotoolkit/datumaro">Dataset Management Framework (Datumaro)</a>.</p>
+<p>We support three dataset formats for visual prompting:</p>
+<ul class="simple">
+<li><p><a class="reference external" href="https://openvinotoolkit.github.io/datumaro/stable/docs/data-formats/formats/common_semantic_segmentation.html">Common Semantic Segmentation</a> for semantic segmentation</p></li>
+<li><p><a class="reference external" href="https://openvinotoolkit.github.io/datumaro/stable/docs/data-formats/formats/coco.html">COCO</a> for instance segmentation</p></li>
+<li><p><a class="reference external" href="https://openvinotoolkit.github.io/datumaro/stable/docs/data-formats/formats/pascal_voc.html">Pascal VOC</a> for instance segmentation and semantic segmentation</p></li>
+</ul>
+<p>If you organized supported dataset format, starting training will be very simple. We just need to pass a path to the root folder and desired model template to start training:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ otx train &lt;model_template&gt; \
+    --train-data-roots &lt;path_to_data_root&gt; \
+    --val-data-roots &lt;path_to_data_root&gt;
 </pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>During training, mDice for binary mask without label information is used for train/validation metric.
+After training, if using <code class="docutils literal notranslate"><span class="pre">otx</span> <span class="pre">eval</span></code> to evaluate performance, mDice for binary or multi-class masks with label information will be used.
+As you can expect, performance will be different between <code class="docutils literal notranslate"><span class="pre">otx</span> <span class="pre">train</span></code> and <code class="docutils literal notranslate"><span class="pre">otx</span> <span class="pre">eval</span></code>, but if unlabeled mask performance is high, labeld mask performance is high as well.</p>
 </div>
 </section>
 <section id="models">
 <h2>Models<a class="headerlink" href="#models" title="Permalink to this heading">#</a></h2>
-<p>We support the following ready-to-use model templates for transfer learning:</p>
+<p id="visual-prompting-model">We support the following model templates in experimental phase:</p>
 <table class="table">
 <thead>
 <tr class="row-odd"><th class="head"><p>Template ID</p></th>
@@ -489,28 +520,50 @@
 </tr>
 </thead>
 <tbody>
-<tr class="row-even"><td><p><a class="reference external" href="https://github.com/openvinotoolkit/training_extensions/blob/develop/src/otx/algorithms/action/configs/detection/x3d_fast_rcnn/template.yaml">Custom_Action_Detection_X3D_FAST_RCNN</a></p></td>
-<td><p>x3d_fast_rcnn</p></td>
-<td><p>13.04</p></td>
-<td><p>8.32</p></td>
+<tr class="row-even"><td><p><a class="reference external" href="https://github.com/openvinotoolkit/training_extensions/blob/develop/src/otx/algorithms/visual_prompting/configs/sam_vit_b/template_experimental.yaml">Visual_Prompting_SAM_ViT_B</a></p></td>
+<td><p>SAM_ViT_B</p></td>
+<td><p>487</p></td>
+<td><p>374</p></td>
 </tr>
 </tbody>
 </table>
-<p>In the table below the <strong>mAP</strong> on some academic datasets are presented. Each model is trained using <a class="reference external" href="https://www.deepmind.com/open-source/kinetics">Kinetics-400</a> pre-trained weight with single Nvidia GeForce RTX3090.</p>
+<p>To check feasibility of <a class="reference external" href="https://arxiv.org/abs/2304.02643">SAM</a>, we did experiments using three public datasets with each other domains: <a class="reference external" href="https://github.com/thsant/wgisd">WGISD</a>, <a class="reference external" href="https://conservancy.umn.edu/handle/11299/214865">Trashcan</a>, and <a class="reference external" href="https://flare22.grand-challenge.org/">FLARE22</a>, and checked <a class="reference external" href="https://en.wikipedia.org/wiki/S%C3%B8rensen%E2%80%93Dice_coefficient">Dice score</a>.
+We used sampled training data from <a class="reference external" href="https://conservancy.umn.edu/handle/11299/214865">Trashcan</a> and <a class="reference external" href="https://flare22.grand-challenge.org/">FLARE22</a>, and full training data (=110) from <a class="reference external" href="https://github.com/thsant/wgisd">WGISD</a>. The below table shows performance improvement after fine-tuning.</p>
 <table class="table">
 <thead>
-<tr class="row-odd"><th class="head"><p>Model name</p></th>
-<th class="head"><p>JHMDB</p></th>
-<th class="head"><p>UCF101-24</p></th>
+<tr class="row-odd"><th class="head"><p>Dataset</p></th>
+<th class="head"><p>#samples</p></th>
+<th class="head"><p>Before</p></th>
+<th class="head"><p>After fine-tuning</p></th>
 </tr>
 </thead>
 <tbody>
-<tr class="row-even"><td><p>x3d_fast_rcnn</p></td>
-<td><p>92.14</p></td>
-<td><p>80.7</p></td>
+<tr class="row-even"><td><p><a class="reference external" href="https://github.com/thsant/wgisd">WGISD</a></p></td>
+<td><p>110</p></td>
+<td><p>92.32</p></td>
+<td><p>92.46 (+0.14)</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference external" href="https://conservancy.umn.edu/handle/11299/214865">Trashcan</a></p></td>
+<td><p>100</p></td>
+<td><p>79.61</p></td>
+<td><p>83.92 (+4.31)</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference external" href="https://flare22.grand-challenge.org/">FLARE22</a></p></td>
+<td><p>1 CT (=100 slices)</p></td>
+<td><p>91.48</p></td>
+<td><p>91.68 (+0.20)</p></td>
 </tr>
 </tbody>
 </table>
+<p>According to datasets, <code class="docutils literal notranslate"><span class="pre">learning</span> <span class="pre">rate</span></code> and <code class="docutils literal notranslate"><span class="pre">batch</span> <span class="pre">size</span></code> can be adjusted like below:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ otx train &lt;model_template&gt; \
+    --train-data-roots &lt;path_to_data_root&gt; \
+    --val-data-roots &lt;path_to_data_root&gt; \
+    params \
+    --learning_parameters.dataset.train_batch_size &lt;batch_size_to_be_updated&gt; \
+    --learning_parameters.optimizer.lr &lt;learning_rate_to_be_updated&gt;
+</pre></div>
+</div>
 </section>
 </section>
 
@@ -522,17 +575,17 @@
             <footer class="bd-footer-article">
                 <!-- Previous / next buttons -->
 <div class='prev-next-area'>
-  <a class='left-prev' id="prev-link" href="action_classification.html" title="previous page">
+  <a class='left-prev' id="prev-link" href="../action/action_detection.html" title="previous page">
       <i class="fa-solid fa-angle-left"></i>
       <div class="prev-next-info">
           <p class="prev-next-subtitle">previous</p>
-          <p class="prev-next-title">Action Classification</p>
+          <p class="prev-next-title">Action Detection</p>
       </div>
   </a>
-  <a class='right-next' id="next-link" href="../visual_prompting/index.html" title="next page">
+  <a class='right-next' id="next-link" href="../../additional_features/index.html" title="next page">
   <div class="prev-next-info">
       <p class="prev-next-subtitle">next</p>
-      <p class="prev-next-title">Visual Prompting</p>
+      <p class="prev-next-title">Additional Features</p>
   </div>
   <i class="fa-solid fa-angle-right"></i>
   </a>
@@ -579,7 +632,7 @@
 <div class="toc-item">
   
 <div class="tocsection sourcelink">
-    <a href="../../../../_sources/guide/explanation/algorithms/action/action_detection.rst.txt">
+    <a href="../../../../_sources/guide/explanation/algorithms/visual_prompting/index.rst.txt">
         <i class="fa-solid fa-file-lines"></i> Show Source
     </a>
 </div>

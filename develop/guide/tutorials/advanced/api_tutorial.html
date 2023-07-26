@@ -6,7 +6,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
 
-    <title>Utilize OpenVINO™ Training Extensions APIs in your project &#8212; OpenVINO™ Training Extensions 1.4.0 documentation</title>
+    <title>Utilize OpenVINO™ Training Extensions APIs in your project &#8212; OpenVINO™ Training Extensions 1.5.0 documentation</title>
   
   
   
@@ -276,6 +276,7 @@
 <li class="toctree-l3"><a class="reference internal" href="../../explanation/algorithms/action/action_detection.html">Action Detection</a></li>
 </ul>
 </li>
+<li class="toctree-l2"><a class="reference internal" href="../../explanation/algorithms/visual_prompting/index.html">Visual Prompting</a></li>
 </ul>
 </li>
 <li class="toctree-l1 has-children"><a class="reference internal" href="../../explanation/additional_features/index.html">Additional Features</a><input class="toctree-checkbox" id="toctree-checkbox-9" name="toctree-checkbox-9" type="checkbox"/><label class="toctree-toggle" for="toctree-checkbox-9"><i class="fa-solid fa-chevron-down"></i></label><ul>
@@ -285,6 +286,7 @@
 <li class="toctree-l2"><a class="reference internal" href="../../explanation/additional_features/xai.html">Explainable AI (XAI)</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../explanation/additional_features/noisy_label_detection.html">Noisy Label Detection</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../explanation/additional_features/fast_data_loading.html">Fast Data Loading</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../explanation/additional_features/tiling.html">Improve Small Object Detection with Image Tiling</a></li>
 </ul>
 </li>
 </ul>
@@ -503,7 +505,7 @@ be distinguished by OpenVINO™ Training Extensions Datumaro manager:</p>
 </pre></div>
 </div>
 <p>We will use the SSD object detection model in that tutorial. Let’s initiate the model template:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">templates_dir</span> <span class="o">=</span> <span class="s1">&#39;otx/algorithms&#39;</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">templates_dir</span> <span class="o">=</span> <span class="s1">&#39;src/otx/algorithms&#39;</span>
 <span class="n">registry</span> <span class="o">=</span> <span class="n">Registry</span><span class="p">(</span><span class="n">templates_dir</span><span class="p">)</span>
 <span class="n">model_template</span> <span class="o">=</span> <span class="n">registry</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;Custom_Object_Detection_Gen3_SSD&#39;</span><span class="p">)</span>
 </pre></div>

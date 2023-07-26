@@ -6,7 +6,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
 
-    <title>openvino &#8212; OpenVINO™ Training Extensions 1.4.0 documentation</title>
+    <title>openvino &#8212; OpenVINO™ Training Extensions 1.5.0 documentation</title>
   
   
   
@@ -276,6 +276,7 @@
 <li class="toctree-l3"><a class="reference internal" href="../../../../explanation/algorithms/action/action_detection.html">Action Detection</a></li>
 </ul>
 </li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../explanation/algorithms/visual_prompting/index.html">Visual Prompting</a></li>
 </ul>
 </li>
 <li class="toctree-l1 has-children"><a class="reference internal" href="../../../../explanation/additional_features/index.html">Additional Features</a><input class="toctree-checkbox" id="toctree-checkbox-9" name="toctree-checkbox-9" type="checkbox"/><label class="toctree-toggle" for="toctree-checkbox-9"><i class="fa-solid fa-chevron-down"></i></label><ul>
@@ -285,6 +286,7 @@
 <li class="toctree-l2"><a class="reference internal" href="../../../../explanation/additional_features/xai.html">Explainable AI (XAI)</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../../explanation/additional_features/noisy_label_detection.html">Noisy Label Detection</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../../explanation/additional_features/fast_data_loading.html">Fast Data Loading</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../explanation/additional_features/tiling.html">Improve Small Object Detection with Image Tiling</a></li>
 </ul>
 </li>
 </ul>
@@ -458,49 +460,6 @@
 <h1>openvino<a class="headerlink" href="#openvino" title="Permalink to this heading">#</a></h1>
 <div class="toctree-wrapper compound">
 </div>
-<span class="target" id="module-otx.algorithms.action.adapters.openvino.model_wrappers"></span><p>Model wrappers.</p>
-<dl class="py class">
-<dt class="sig sig-object py" id="otx.algorithms.action.adapters.openvino.model_wrappers.OTXOVActionCls">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">otx.algorithms.action.adapters.openvino.model_wrappers.</span></span><span class="sig-name descname"><span class="pre">OTXOVActionCls</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model_adapter</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">OpenvinoAdapter</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">configuration</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">preload</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#otx.algorithms.action.adapters.openvino.model_wrappers.OTXOVActionCls" title="Permalink to this definition">#</a></dt>
-<dd><p>OTX Action Classification model for openvino task.</p>
-<dl class="py method">
-<dt class="sig sig-object py" id="otx.algorithms.action.adapters.openvino.model_wrappers.OTXOVActionCls.postprocess">
-<span class="sig-name descname"><span class="pre">postprocess</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">outputs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">ndarray</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">meta</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#otx.algorithms.action.adapters.openvino.model_wrappers.OTXOVActionCls.postprocess" title="Permalink to this definition">#</a></dt>
-<dd><p>Post-process.</p>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="otx.algorithms.action.adapters.openvino.model_wrappers.OTXOVActionCls.preprocess">
-<span class="sig-name descname"><span class="pre">preprocess</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">inputs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="../../../api/entities/general.html#otx.api.entities.dataset_item.DatasetItemEntity" title="otx.api.entities.dataset_item.DatasetItemEntity"><span class="pre">DatasetItemEntity</span></a><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#otx.algorithms.action.adapters.openvino.model_wrappers.OTXOVActionCls.preprocess" title="Permalink to this definition">#</a></dt>
-<dd><p>Pre-process.</p>
-</dd></dl>
-
-</dd></dl>
-
-<dl class="py class">
-<dt class="sig sig-object py" id="otx.algorithms.action.adapters.openvino.model_wrappers.OTXOVActionDet">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">otx.algorithms.action.adapters.openvino.model_wrappers.</span></span><span class="sig-name descname"><span class="pre">OTXOVActionDet</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model_adapter</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">OpenvinoAdapter</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">configuration</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">preload</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#otx.algorithms.action.adapters.openvino.model_wrappers.OTXOVActionDet" title="Permalink to this definition">#</a></dt>
-<dd><p>OTX Action Detection model for openvino task.</p>
-<dl class="py method">
-<dt class="sig sig-object py" id="otx.algorithms.action.adapters.openvino.model_wrappers.OTXOVActionDet.postprocess">
-<span class="sig-name descname"><span class="pre">postprocess</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">outputs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">ndarray</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">meta</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#otx.algorithms.action.adapters.openvino.model_wrappers.OTXOVActionDet.postprocess" title="Permalink to this definition">#</a></dt>
-<dd><p>Post-process.</p>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="otx.algorithms.action.adapters.openvino.model_wrappers.OTXOVActionDet.preprocess">
-<span class="sig-name descname"><span class="pre">preprocess</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">inputs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="../../../api/entities/general.html#otx.api.entities.dataset_item.DatasetItemEntity" title="otx.api.entities.dataset_item.DatasetItemEntity"><span class="pre">DatasetItemEntity</span></a><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#otx.algorithms.action.adapters.openvino.model_wrappers.OTXOVActionDet.preprocess" title="Permalink to this definition">#</a></dt>
-<dd><p>Pre-process.</p>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="otx.algorithms.action.adapters.openvino.model_wrappers.OTXOVActionDet.reshape">
-<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">reshape</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">inputs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">ndarray</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">ndarray</span></span></span><a class="headerlink" href="#otx.algorithms.action.adapters.openvino.model_wrappers.OTXOVActionDet.reshape" title="Permalink to this definition">#</a></dt>
-<dd><p>Reshape(expand, transpose, permute) the input np.ndarray.</p>
-</dd></dl>
-
-</dd></dl>
-
 <span class="target" id="module-otx.algorithms.action.adapters.openvino.dataloader"></span><p>Data loaders for OpenVINO action recognition models.</p>
 <dl class="py class">
 <dt class="sig sig-object py" id="otx.algorithms.action.adapters.openvino.dataloader.ActionOVClsDataLoader">
@@ -546,7 +505,7 @@ It samples background frames from original DatasetEntity, which contain both emp
 
 <dl class="py function">
 <dt class="sig sig-object py" id="otx.algorithms.action.adapters.openvino.dataloader.get_ovdataloader">
-<span class="sig-prename descclassname"><span class="pre">otx.algorithms.action.adapters.openvino.dataloader.</span></span><span class="sig-name descname"><span class="pre">get_ovdataloader</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dataset</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="../../../api/entities/general.html#otx.api.entities.datasets.DatasetEntity" title="otx.api.entities.datasets.DatasetEntity"><span class="pre">DatasetEntity</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">task_type</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">clip_len</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">width</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">height</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">DataLoader</span></span></span><a class="headerlink" href="#otx.algorithms.action.adapters.openvino.dataloader.get_ovdataloader" title="Permalink to this definition">#</a></dt>
+<span class="sig-prename descclassname"><span class="pre">otx.algorithms.action.adapters.openvino.dataloader.</span></span><span class="sig-name descname"><span class="pre">get_ovdataloader</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dataset</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="../../../api/entities/general.html#otx.api.entities.datasets.DatasetEntity" title="otx.api.entities.datasets.DatasetEntity"><span class="pre">DatasetEntity</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">task_type</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">clip_len</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">width</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">height</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#otx.algorithms.action.adapters.openvino.dataloader.get_ovdataloader" title="Permalink to this definition">#</a></dt>
 <dd><p>Find proper dataloader for dataset and task type.</p>
 <p>If dataset has only a single video, this returns DataLoader for online demo
 If dataset has multiple videos, this return DataLoader for academia evaluation</p>
@@ -592,73 +551,6 @@ If dataset has multiple videos, this return DataLoader for academia evaluation</
 </div>
 <nav id="bd-toc-nav" class="page-toc">
     <ul class="visible nav section-nav flex-column">
- <li class="toc-h2 nav-item toc-entry">
-  <a class="reference internal nav-link" href="#otx.algorithms.action.adapters.openvino.model_wrappers.OTXOVActionCls">
-   <code class="docutils literal notranslate">
-    <span class="pre">
-     OTXOVActionCls
-    </span>
-   </code>
-  </a>
-  <ul class="nav section-nav flex-column">
-   <li class="toc-h3 nav-item toc-entry">
-    <a class="reference internal nav-link" href="#otx.algorithms.action.adapters.openvino.model_wrappers.OTXOVActionCls.postprocess">
-     <code class="docutils literal notranslate">
-      <span class="pre">
-       OTXOVActionCls.postprocess()
-      </span>
-     </code>
-    </a>
-   </li>
-   <li class="toc-h3 nav-item toc-entry">
-    <a class="reference internal nav-link" href="#otx.algorithms.action.adapters.openvino.model_wrappers.OTXOVActionCls.preprocess">
-     <code class="docutils literal notranslate">
-      <span class="pre">
-       OTXOVActionCls.preprocess()
-      </span>
-     </code>
-    </a>
-   </li>
-  </ul>
- </li>
- <li class="toc-h2 nav-item toc-entry">
-  <a class="reference internal nav-link" href="#otx.algorithms.action.adapters.openvino.model_wrappers.OTXOVActionDet">
-   <code class="docutils literal notranslate">
-    <span class="pre">
-     OTXOVActionDet
-    </span>
-   </code>
-  </a>
-  <ul class="nav section-nav flex-column">
-   <li class="toc-h3 nav-item toc-entry">
-    <a class="reference internal nav-link" href="#otx.algorithms.action.adapters.openvino.model_wrappers.OTXOVActionDet.postprocess">
-     <code class="docutils literal notranslate">
-      <span class="pre">
-       OTXOVActionDet.postprocess()
-      </span>
-     </code>
-    </a>
-   </li>
-   <li class="toc-h3 nav-item toc-entry">
-    <a class="reference internal nav-link" href="#otx.algorithms.action.adapters.openvino.model_wrappers.OTXOVActionDet.preprocess">
-     <code class="docutils literal notranslate">
-      <span class="pre">
-       OTXOVActionDet.preprocess()
-      </span>
-     </code>
-    </a>
-   </li>
-   <li class="toc-h3 nav-item toc-entry">
-    <a class="reference internal nav-link" href="#otx.algorithms.action.adapters.openvino.model_wrappers.OTXOVActionDet.reshape">
-     <code class="docutils literal notranslate">
-      <span class="pre">
-       OTXOVActionDet.reshape()
-      </span>
-     </code>
-    </a>
-   </li>
-  </ul>
- </li>
  <li class="toc-h2 nav-item toc-entry">
   <a class="reference internal nav-link" href="#otx.algorithms.action.adapters.openvino.dataloader.ActionOVClsDataLoader">
    <code class="docutils literal notranslate">

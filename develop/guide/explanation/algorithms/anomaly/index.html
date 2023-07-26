@@ -6,7 +6,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
 
-    <title>Anomaly Detection &#8212; OpenVINO™ Training Extensions 1.4.0 documentation</title>
+    <title>Anomaly Detection &#8212; OpenVINO™ Training Extensions 1.5.0 documentation</title>
   
   
   
@@ -276,6 +276,7 @@
 <li class="toctree-l3"><a class="reference internal" href="../action/action_detection.html">Action Detection</a></li>
 </ul>
 </li>
+<li class="toctree-l2"><a class="reference internal" href="../visual_prompting/index.html">Visual Prompting</a></li>
 </ul>
 </li>
 <li class="toctree-l1 has-children"><a class="reference internal" href="../../additional_features/index.html">Additional Features</a><input class="toctree-checkbox" id="toctree-checkbox-9" name="toctree-checkbox-9" type="checkbox"/><label class="toctree-toggle" for="toctree-checkbox-9"><i class="fa-solid fa-chevron-down"></i></label><ul>
@@ -285,6 +286,7 @@
 <li class="toctree-l2"><a class="reference internal" href="../../additional_features/xai.html">Explainable AI (XAI)</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../additional_features/noisy_label_detection.html">Noisy Label Detection</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../additional_features/fast_data_loading.html">Fast Data Loading</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../additional_features/tiling.html">Improve Small Object Detection with Image Tiling</a></li>
 </ul>
 </li>
 </ul>
@@ -535,23 +537,23 @@
 </thead>
 <tbody>
 <tr class="row-even"><td><p>PADIM</p></td>
-<td><p><a class="reference external" href="https://github.com/openvinotoolkit/training_extensions/blob/develop/otx/algorithms/anomaly/configs/classification/padim/template.yaml">ote_anomaly_classification_padim</a></p></td>
-<td><p><a class="reference external" href="https://github.com/openvinotoolkit/training_extensions/blob/develop/otx/algorithms/anomaly/configs/detection/padim/template.yaml">ote_anomaly_detection_padim</a></p></td>
-<td><p><a class="reference external" href="https://github.com/openvinotoolkit/training_extensions/blob/develop/otx/algorithms/anomaly/configs/segmentation/padim/template.yaml">ote_anomaly_segmentation_padim</a></p></td>
+<td><p><a class="reference external" href="https://github.com/openvinotoolkit/training_extensions/blob/develop/src/otx/algorithms/anomaly/configs/classification/padim/template.yaml">ote_anomaly_classification_padim</a></p></td>
+<td><p><a class="reference external" href="https://github.com/openvinotoolkit/training_extensions/blob/develop/src/otx/algorithms/anomaly/configs/detection/padim/template.yaml">ote_anomaly_detection_padim</a></p></td>
+<td><p><a class="reference external" href="https://github.com/openvinotoolkit/training_extensions/blob/develop/src/otx/algorithms/anomaly/configs/segmentation/padim/template.yaml">ote_anomaly_segmentation_padim</a></p></td>
 <td><p>3.9</p></td>
 <td><p>168.4</p></td>
 </tr>
 <tr class="row-odd"><td><p>STFPM</p></td>
-<td><p><a class="reference external" href="https://github.com/openvinotoolkit/training_extensions/blob/develop/otx/algorithms/anomaly/configs/classification/stfpm/template.yaml">ote_anomaly_classification_stfpm</a></p></td>
-<td><p><a class="reference external" href="https://github.com/openvinotoolkit/training_extensions/blob/develop/otx/algorithms/anomaly/configs/detection/stfpm/template.yaml">ote_anomaly_detection_stfpm</a></p></td>
-<td><p><a class="reference external" href="https://github.com/openvinotoolkit/training_extensions/blob/develop/otx/algorithms/anomaly/configs/segmentation/stfpm/template.yaml">ote_anomaly_segmentation_stfpm</a></p></td>
+<td><p><a class="reference external" href="https://github.com/openvinotoolkit/training_extensions/blob/develop/src/otx/algorithms/anomaly/configs/classification/stfpm/template.yaml">ote_anomaly_classification_stfpm</a></p></td>
+<td><p><a class="reference external" href="https://github.com/openvinotoolkit/training_extensions/blob/develop/src/otx/algorithms/anomaly/configs/detection/stfpm/template.yaml">ote_anomaly_detection_stfpm</a></p></td>
+<td><p><a class="reference external" href="https://github.com/openvinotoolkit/training_extensions/blob/develop/src/otx/algorithms/anomaly/configs/segmentation/stfpm/template.yaml">ote_anomaly_segmentation_stfpm</a></p></td>
 <td><p>5.6</p></td>
 <td><p>21.1</p></td>
 </tr>
 <tr class="row-even"><td><p>DRAEM</p></td>
-<td><p><a class="reference external" href="https://github.com/openvinotoolkit/training_extensions/blob/develop/otx/algorithms/anomaly/configs/classification/draem/template_experimental.yaml">ote_anomaly_classification_draem</a></p></td>
-<td><p><a class="reference external" href="https://github.com/openvinotoolkit/training_extensions/blob/develop/otx/algorithms/anomaly/configs/detection/draem/template_experimental.yaml">ote_anomaly_detection_draem</a></p></td>
-<td><p><a class="reference external" href="https://github.com/openvinotoolkit/training_extensions/blob/develop/otx/algorithms/anomaly/configs/segmentation/draem/template_experimental.yaml">ote_anomaly_segmentation_draem</a></p></td>
+<td><p><a class="reference external" href="https://github.com/openvinotoolkit/training_extensions/blob/develop/src/otx/algorithms/anomaly/configs/classification/draem/template_experimental.yaml">ote_anomaly_classification_draem</a></p></td>
+<td><p><a class="reference external" href="https://github.com/openvinotoolkit/training_extensions/blob/develop/src/otx/algorithms/anomaly/configs/detection/draem/template_experimental.yaml">ote_anomaly_detection_draem</a></p></td>
+<td><p><a class="reference external" href="https://github.com/openvinotoolkit/training_extensions/blob/develop/src/otx/algorithms/anomaly/configs/segmentation/draem/template_experimental.yaml">ote_anomaly_segmentation_draem</a></p></td>
 <td><p>N/A</p></td>
 <td><p>1183.3</p></td>
 </tr>
