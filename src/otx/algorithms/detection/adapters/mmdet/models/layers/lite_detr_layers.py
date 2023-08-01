@@ -388,6 +388,7 @@ class EfficientTransformerEncoder(BaseModule):
                 )
                 query = output
                 value = torch.cat([value[: level_start_index[4 - self.enc_scale]], query], 0)
+            breakpoint()
         if self.post_norm is not None:
             output = self.post_norm(output)
         return value

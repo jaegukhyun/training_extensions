@@ -241,6 +241,9 @@ class MMDetectionTask(OTXDetectionTask):
         self._init_task(dataset)
 
         cfg = self.configure(True, "train", None, get_dataset(dataset, Subset.TRAINING))
+        cfg.data.val_dataloader.samples_per_gpu = 1
+        cfg.data.val_dataloader.workers_per_gpu = 0
+        cfg.data.val_dataloader.persistent_workers = False
         logger.info("train!")
 
         timestamp = time.strftime("%Y%m%d_%H%M%S", time.localtime())
