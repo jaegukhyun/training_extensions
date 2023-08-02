@@ -169,6 +169,7 @@ class CustomDINOTransformer(DeformableDetrTransformer):
         reference_points = reference_points.sigmoid()
 
         # forward_decoder part in mmdet 3.x
+        breakpoint()
         inter_states, references = self.decoder(
             query=query,
             value=memory,

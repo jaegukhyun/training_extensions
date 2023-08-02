@@ -155,6 +155,23 @@ class CustomDINOHead(DeformableDETRHead, DETRHeadExtension):
                 "labels": gt_label,
             }
             batch_info.append(info)
+        torch.manual_seed(1234)
+        _mlvl_feats = [torch.randn(mlvl_feat.shape).cuda() for mlvl_feat in mlvl_feats]
+        _mlvl_masks = [(torch.randn(mlvl_mask.shape) > 1).cuda() for mlvl_mask in mlvl_masks]
+        _mlvl_positional_encodings = [
+            torch.randn(mlvl_positional_encoding.shape).cuda() for mlvl_positional_encoding in mlvl_positional_encodings
+        ]
+        _query_embeds = torch.nn.parameter.Parameter(torch.randn(query_embeds.shape).cuda())
+        hs, reference, hs_enc, ref_enc, init_box_proposal = self.transformer(
+            batch_info,
+            _mlvl_feats,
+            _mlvl_masks,
+            _query_embeds,
+            _mlvl_positional_encodings,
+            reg_branches=self.reg_branches,
+            cls_branches=self.cls_branches,
+        )
+        breakpoint()
         return self.transformer(
             batch_info,
             mlvl_feats,
