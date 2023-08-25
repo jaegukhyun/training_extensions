@@ -5,6 +5,7 @@
 
 from .custom_atss_detector import CustomATSS
 from .custom_deformable_detr_detector import CustomDeformableDETR
+from .custom_detr_detector import CustomDETR
 from .custom_dino_detector import CustomDINO
 from .custom_maskrcnn_detector import CustomMaskRCNN
 from .custom_maskrcnn_tile_optimized import CustomMaskRCNNTileOptimized
@@ -18,6 +19,7 @@ from .unbiased_teacher import UnbiasedTeacher
 
 __all__ = [
     "CustomATSS",
+    "CustomDETR",
     "CustomDeformableDETR",
     "CustomDINO",
     "CustomMaskRCNN",
