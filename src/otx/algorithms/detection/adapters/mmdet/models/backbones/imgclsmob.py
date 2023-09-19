@@ -6,9 +6,9 @@
 import os
 
 from mmcv.cnn import build_activation_layer, build_norm_layer
-from mmcv.runner import get_dist_info
 from mmdet.models.builder import BACKBONES
 from mmdet.utils.logger import get_root_logger
+from mmengine.dist import get_dist_info
 from pytorchcv.model_provider import _models
 from pytorchcv.models.model_store import download_model
 from torch import distributed, nn

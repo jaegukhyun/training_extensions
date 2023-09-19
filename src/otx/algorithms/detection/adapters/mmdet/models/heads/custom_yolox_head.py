@@ -2,7 +2,6 @@
 
 import torch
 import torch.nn.functional as F
-from mmcv.runner import force_fp32
 from mmdet.core import multi_apply, reduce_mean
 from mmdet.models.builder import HEADS
 from mmdet.models.dense_heads.yolox_head import YOLOXHead
@@ -29,7 +28,6 @@ class CustomYOLOXHeadTrackingLossDynamics(TrackingLossDynamicsMixIn, CustomYOLOX
     tracking_loss_types = (TrackingLossType.cls, TrackingLossType.bbox)
 
     @TrackingLossDynamicsMixIn._wrap_loss
-    @force_fp32(apply_to=("cls_scores", "bbox_preds", "objectnesses"))
     def loss(self, cls_scores, bbox_preds, objectnesses, gt_bboxes, gt_labels, img_metas, gt_bboxes_ignore=None):
         """Compute loss of the head.
 

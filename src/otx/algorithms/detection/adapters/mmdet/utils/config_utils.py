@@ -2,7 +2,7 @@
 # Copyright (C) 2022-2023 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-from mmcv import Config, ConfigDict
+from mmengine.config import Config, ConfigDict
 
 from otx.algorithms.common.adapters.mmcv.utils import (
     InputSizeManager,

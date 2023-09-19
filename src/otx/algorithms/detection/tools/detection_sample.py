@@ -18,7 +18,7 @@ import argparse
 import sys
 
 import numpy as np
-from mmcv.utils import get_logger
+from mmengine.logging import MMLogger
 
 from otx.algorithms.common.utils import get_task_class
 from otx.api.configuration.helper import create
@@ -44,7 +44,7 @@ from otx.api.entities.task_environment import TaskEnvironment
 from otx.api.usecases.tasks.interfaces.export_interface import ExportType
 from otx.api.usecases.tasks.interfaces.optimization_interface import OptimizationType
 
-logger = get_logger(name="mmdet")
+logger = MMLogger.get_current_instance()
 
 
 def parse_args():

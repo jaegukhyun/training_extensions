@@ -13,7 +13,6 @@ from functools import partial
 from typing import Any, Dict, Optional, Union
 
 import torch
-from mmcv.runner import wrap_fp16_model
 from mmdet import __version__
 from mmdet.apis import single_gpu_test, train_detector
 from mmdet.datasets import build_dataloader, build_dataset, replace_ImageToTensor
@@ -115,8 +114,6 @@ class MMDetectionTask(OTXDetectionTask):
         """Build model from model_builder."""
         model_builder = getattr(self, "model_builder", build_detector)
         model = model_builder(cfg, **kwargs)
-        if bool(fp16):
-            wrap_fp16_model(model)
         return model
 
     # pylint: disable=too-many-arguments

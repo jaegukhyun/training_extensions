@@ -8,7 +8,6 @@ import numpy as np
 import torch
 from mmcls.models.necks.gap import GlobalAveragePooling
 from mmcv.cnn import ConvModule
-from mmcv.runner import auto_fp16
 from mmdet.models.builder import DETECTORS
 from torch import nn
 
@@ -49,7 +48,6 @@ class TileClassifier(torch.nn.Module):
         self.loss_func = torch.nn.BCEWithLogitsLoss()
         self.sigmoid = torch.nn.Sigmoid()
 
-    @auto_fp16()
     def forward(self, img: torch.Tensor) -> torch.Tensor:
         """Forward pass.
 
@@ -64,7 +62,6 @@ class TileClassifier(torch.nn.Module):
         y = self.classifier(x)
         return y
 
-    @auto_fp16()
     def loss(self, pred: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
         """Calculate BCE loss.
 
@@ -78,7 +75,6 @@ class TileClassifier(torch.nn.Module):
         loss = self.loss_func(pred, target)
         return loss
 
-    @auto_fp16()
     def simple_test(self, img: torch.Tensor) -> torch.Tensor:
         """Simple test.
 

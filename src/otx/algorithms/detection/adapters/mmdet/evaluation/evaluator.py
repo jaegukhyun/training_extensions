@@ -20,11 +20,11 @@ from typing import Dict, List, Tuple, Union
 import mmcv
 import numpy as np
 import pycocotools.mask as mask_util
-from mmcv.utils import print_log
 from mmdet.core import BitmapMasks, PolygonMasks, eval_map
 from mmdet.core.evaluation.bbox_overlaps import bbox_overlaps
 from mmdet.core.evaluation.class_names import get_classes
 from mmdet.core.evaluation.mean_ap import average_precision
+from mmengine.logging import print_log
 from terminaltables import AsciiTable
 
 from otx.api.entities.label import Domain

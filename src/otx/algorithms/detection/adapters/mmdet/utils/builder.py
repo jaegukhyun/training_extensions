@@ -7,12 +7,13 @@ from copy import deepcopy
 from typing import Optional, Union
 
 import torch
-from mmcv.runner import load_checkpoint
-from mmcv.utils import Config, ConfigDict, get_logger
+from mmengine.config import Config, ConfigDict
+from mmengine.loggin import MMLogger
+from mmengine.runner.checkpoint import load_checkpoint
 
 from otx.algorithms.common.utils.logger import LEVEL
 
-logger = get_logger("mmdet")
+logger = MMLogger.get_curent_instance()
 
 
 def build_detector(

@@ -3,8 +3,8 @@
 # SPDX-License-Identifier: Apache-2.0
 #
 
-from mmcv.runner.checkpoint import _load_checkpoint
 from mmdet.models import LOSSES
+from mmengine.runner.checkpoint import _load_checkpoint
 from torch import nn
 
 # TODO: Need to fix pylint issues

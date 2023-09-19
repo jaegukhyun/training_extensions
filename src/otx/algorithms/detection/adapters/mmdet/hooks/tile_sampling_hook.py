@@ -5,7 +5,8 @@
 
 from random import sample
 
-from mmcv.runner import HOOKS, Hook
+from mmengine.hooks import Hook
+from mmengine.registry import HOOKS
 
 
 @HOOKS.register_module()

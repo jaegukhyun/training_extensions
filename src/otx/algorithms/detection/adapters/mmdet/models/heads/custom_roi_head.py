@@ -4,7 +4,6 @@
 #
 
 import torch
-from mmcv.runner import force_fp32
 from mmdet.core import bbox2roi, multi_apply
 from mmdet.models.builder import HEADS, build_head, build_roi_extractor
 from mmdet.models.losses import accuracy
@@ -125,7 +124,6 @@ class CustomConvFCBBoxHead(Shared2FCBBoxHead, CrossDatasetDetectorHead):
             valid_label_mask = torch.cat(valid_label_mask, 0)
         return labels, label_weights, bbox_targets, bbox_weights, valid_label_mask
 
-    @force_fp32(apply_to=("cls_score", "bbox_pred"))
     def loss(
         self,
         cls_score,

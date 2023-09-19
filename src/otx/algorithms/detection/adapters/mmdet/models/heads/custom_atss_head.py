@@ -4,7 +4,6 @@
 #
 
 import torch
-from mmcv.runner import force_fp32
 from mmdet.core import (
     anchor_inside_flags,
     bbox_overlaps,
@@ -49,7 +48,6 @@ class CustomATSSHead(CrossDatasetDetectorHead, ATSSHead):
         self.bg_loss_weight = bg_loss_weight
         self.use_qfl = use_qfl
 
-    @force_fp32(apply_to=("cls_scores", "bbox_preds", "centernesses"))
     def loss(self, cls_scores, bbox_preds, centernesses, gt_bboxes, gt_labels, img_metas, gt_bboxes_ignore=None):
         """Compute losses of the head.
 

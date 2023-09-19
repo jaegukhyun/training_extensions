@@ -4,7 +4,6 @@
 #
 
 import torch
-from mmcv.runner import force_fp32
 from mmdet.core import bbox_overlaps, distance2bbox, reduce_mean
 from mmdet.models.builder import HEADS
 from mmdet.models.dense_heads.vfnet_head import VFNetHead
@@ -31,7 +30,6 @@ class CustomVFNetHead(CrossDatasetDetectorHead, VFNetHead):
         super().__init__(*args, **kwargs)
         self.bg_loss_weight = bg_loss_weight
 
-    @force_fp32(apply_to=("cls_scores", "bbox_preds", "bbox_preds_refine"))
     def loss(self, cls_scores, bbox_preds, bbox_preds_refine, gt_bboxes, gt_labels, img_metas, gt_bboxes_ignore=None):
         """Compute loss of the head.
 

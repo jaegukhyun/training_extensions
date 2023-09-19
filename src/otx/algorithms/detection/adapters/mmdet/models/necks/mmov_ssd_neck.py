@@ -8,8 +8,8 @@ from typing import Dict, List, Optional, Union
 import openvino.runtime as ov
 import torch
 from mmcv.cnn import ConvModule, DepthwiseSeparableConvModule
-from mmcv.runner import BaseModule
 from mmdet.models.builder import NECKS
+from mmengin.module import BaseModule
 from torch import nn
 
 from otx.core.ov.models.mmov_model import MMOVModel

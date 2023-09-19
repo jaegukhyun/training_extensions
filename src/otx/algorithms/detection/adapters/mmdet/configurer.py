@@ -5,7 +5,7 @@
 
 from typing import Optional, Tuple
 
-from mmcv.utils import ConfigDict
+from mmengine.config import ConfigDict
 
 from otx.algorithms.common.adapters.mmcv.clsincr_mixin import IncrConfigurerMixin
 from otx.algorithms.common.adapters.mmcv.configurer import BaseConfigurer
