@@ -8,9 +8,9 @@ from typing import Dict, List, Optional, Union
 
 import openvino.runtime as ov
 import torch
-from mmdet.core import build_anchor_generator
 from mmdet.models.builder import HEADS
 from mmdet.models.dense_heads.ssd_head import SSDHead
+from mmdet.models.task_modules.builder import build_anchor_generator
 
 from otx.core.ov.models.mmov_model import MMOVModel
 

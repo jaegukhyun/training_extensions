@@ -7,9 +7,6 @@
 
 from functools import partial
 
-from mmdet.core.bbox.assigners.base_assigner import BaseAssigner
-from mmdet.core.bbox.builder import BBOX_ASSIGNERS, BBOX_SAMPLERS
-from mmdet.core.bbox.samplers import BaseSampler
 from mmdet.models.builder import HEADS
 from mmdet.models.dense_heads.base_dense_head import BaseDenseHead
 from mmdet.models.dense_heads.base_mask_head import BaseMaskHead
@@ -18,6 +15,9 @@ from mmdet.models.roi_heads.base_roi_head import BaseRoIHead
 from mmdet.models.roi_heads.bbox_heads.bbox_head import BBoxHead
 from mmdet.models.roi_heads.bbox_heads.sabl_head import SABLHead
 from mmdet.models.roi_heads.mask_heads.fcn_mask_head import FCNMaskHead
+from mmdet.models.task_modules.assigners import BaseAssigner
+from mmdet.models.task_modules.builder import BBOX_ASSIGNERS, BBOX_SAMPLERS
+from mmdet.models.task_modules.samplers import BaseSampler
 
 from otx.algorithms.common.adapters.mmdeploy.utils import is_mmdeploy_enabled
 from otx.algorithms.common.adapters.nncf import (
@@ -117,8 +117,8 @@ NNCF_PATCHER.patch(
     "mmdet.models.roi_heads.roi_extractors.SingleRoIExtractor.map_roi_levels",
     no_nncf_trace_wrapper,
 )
-NNCF_PATCHER.patch("mmdet.core.bbox2result", no_nncf_trace_wrapper)
-NNCF_PATCHER.patch("mmdet.core.bbox2roi", no_nncf_trace_wrapper)
+NNCF_PATCHER.patch("mmdet.structures.bbox.bbox2result", no_nncf_trace_wrapper)
+NNCF_PATCHER.patch("mmdet.structures.bbox.bbox2roi", no_nncf_trace_wrapper)
 
 
 def _wrap_is_in_onnx_export(ctx, fn):

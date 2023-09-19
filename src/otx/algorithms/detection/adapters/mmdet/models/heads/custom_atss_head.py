@@ -4,15 +4,12 @@
 #
 
 import torch
-from mmdet.core import (
-    anchor_inside_flags,
-    bbox_overlaps,
-    multi_apply,
-    reduce_mean,
-    unmap,
-)
 from mmdet.models.builder import HEADS
 from mmdet.models.dense_heads.atss_head import ATSSHead
+from mmdet.models.task_modules.prior_generators import anchor_inside_flags
+from mmdet.structures.bbox.bbox_overlaps import bbox_overlaps
+from mmdet.utils.dist_utils import reduce_mean
+from mmdet.utils.misc import multi_apply, unmap
 
 from otx.algorithms.detection.adapters.mmdet.models.heads.cross_dataset_detector_head import (
     CrossDatasetDetectorHead,

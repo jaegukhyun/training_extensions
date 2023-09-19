@@ -6,7 +6,9 @@
 from typing import Dict, List, Tuple
 
 import torch
-from mmdet.core import bbox_cxcywh_to_xyxy, bbox_xyxy_to_cxcywh, multi_apply, reduce_mean
+from mmdet.structures.bbox import bbox_cxcywh_to_xyxy, bbox_xyxy_to_cxcywh
+from mmdet.utils.dist_utils import reduce_mean
+from mmdet.utils.misc import multi_apply
 from mmengine.config import Config
 from mmengine.model import BaseModule
 from torch import Tensor

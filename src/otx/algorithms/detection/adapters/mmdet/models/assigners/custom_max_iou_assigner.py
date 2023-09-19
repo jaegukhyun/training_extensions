@@ -4,8 +4,8 @@
 #
 
 import torch
-from mmdet.core.bbox.assigners import MaxIoUAssigner
-from mmdet.core.bbox.builder import BBOX_ASSIGNERS
+from mmdet.models.task_modules.assigners import MaxIoUAssigner
+from mmdet.models.task_modules.builder import BBOX_ASSIGNERS
 
 
 @BBOX_ASSIGNERS.register_module()

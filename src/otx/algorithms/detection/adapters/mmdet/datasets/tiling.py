@@ -13,7 +13,8 @@ from typing import Callable, Dict, List, Tuple, Union
 import cv2
 import numpy as np
 from mmcv.ops import nms
-from mmdet.core import BitmapMasks, bbox2result
+from mmdet.structures.bbox import bbox2result
+from mmdet.structures.mask.structures import BitmapMasks
 from tqdm import tqdm
 
 from otx.api.utils.dataset_utils import non_linear_normalization

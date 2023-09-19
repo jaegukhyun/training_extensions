@@ -8,10 +8,11 @@
 
 import torch
 from mmcv.cnn import build_activation_layer
-from mmdet.core import anchor_inside_flags, unmap
 from mmdet.models.builder import HEADS, build_loss
 from mmdet.models.dense_heads.ssd_head import SSDHead
 from mmdet.models.losses import smooth_l1_loss
+from mmdet.models.task_modules.prior_generators import anchor_inside_flags
+from mmdet.models.utils.misc import unmap
 from torch import nn
 
 from otx.algorithms.detection.adapters.mmdet.models.heads.cross_dataset_detector_head import TrackingLossDynamicsMixIn

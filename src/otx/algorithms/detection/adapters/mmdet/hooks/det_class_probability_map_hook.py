@@ -8,7 +8,7 @@ from typing import List, Optional, Tuple, Union
 import numpy as np
 import torch
 import torch.nn.functional as F
-from mmdet.core import bbox2roi
+from mmdet.structures.bbox import bbox2roi
 
 from otx.algorithms.common.adapters.mmcv.hooks.recording_forward_hook import (
     BaseRecordingForwardHook,

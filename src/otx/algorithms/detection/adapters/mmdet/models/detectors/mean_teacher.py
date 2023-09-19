@@ -8,10 +8,10 @@ import functools
 
 import numpy as np
 import torch
-from mmdet.core import bbox2result, bbox2roi
-from mmdet.core.mask.structures import BitmapMasks
 from mmdet.models import DETECTORS, build_detector
 from mmdet.models.detectors import BaseDetector
+from mmdet.structures.bbox import bbox2result, bbox2roi
+from mmdet.structures.mask.structures import BitmapMasks
 
 from otx.algorithms.common.utils.logger import get_logger
 

@@ -19,10 +19,10 @@ from copy import copy
 from typing import Any, Dict, List, Sequence, Tuple, Union
 
 import numpy as np
-from mmdet.core import PolygonMasks
 from mmdet.datasets.builder import DATASETS, build_dataset
 from mmdet.datasets.custom import CustomDataset
 from mmdet.datasets.pipelines import Compose
+from mmdet.structures.mask.structures import PolygonMasks
 from mmengine.config import Config
 from mmengine.logging import print_log
 

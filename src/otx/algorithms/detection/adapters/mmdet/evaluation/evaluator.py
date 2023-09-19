@@ -20,10 +20,10 @@ from typing import Dict, List, Tuple, Union
 import mmcv
 import numpy as np
 import pycocotools.mask as mask_util
-from mmdet.core import BitmapMasks, PolygonMasks, eval_map
-from mmdet.core.evaluation.bbox_overlaps import bbox_overlaps
-from mmdet.core.evaluation.class_names import get_classes
-from mmdet.core.evaluation.mean_ap import average_precision
+from mmdet.evaluation.functional.class_names import get_classes
+from mmdet.evaluation.functional.mean_ap import average_precision, eval_map
+from mmdet.structures.bbox import bbox_overlaps
+from mmdet.structures.mask.structures import BitmapMasks, PolygonMasks
 from mmengine.logging import print_log
 from terminaltables import AsciiTable
 

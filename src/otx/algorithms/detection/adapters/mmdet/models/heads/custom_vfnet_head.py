@@ -4,9 +4,10 @@
 #
 
 import torch
-from mmdet.core import bbox_overlaps, distance2bbox, reduce_mean
 from mmdet.models.builder import HEADS
 from mmdet.models.dense_heads.vfnet_head import VFNetHead
+from mmdet.sturctures.bbox import bbox_overlaps, distance2bbox
+from mmdet.utils.dist_utils import reduce_mean
 
 from otx.algorithms.detection.adapters.mmdet.models.heads.cross_dataset_detector_head import (
     CrossDatasetDetectorHead,

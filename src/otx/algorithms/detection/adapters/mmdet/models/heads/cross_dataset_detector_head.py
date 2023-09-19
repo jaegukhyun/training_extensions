@@ -9,10 +9,10 @@ from collections import defaultdict
 from typing import Dict, Tuple
 
 import torch
-from mmdet.core import images_to_levels, multi_apply
 from mmdet.models.builder import HEADS
 from mmdet.models.dense_heads.base_dense_head import BaseDenseHead
 from mmdet.models.losses.utils import weight_reduce_loss
+from mmdet.utils.misc import images_to_levels, multi_apply
 
 from otx.algorithms.detection.adapters.mmdet.models.loss_dyns import (
     LossAccumulator,

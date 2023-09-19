@@ -7,8 +7,8 @@
 #
 
 import torch
-from mmdet.core.anchor.anchor_generator import AnchorGenerator
-from mmdet.core.anchor.builder import PRIOR_GENERATORS
+from mmdet.models.task_modules.builder import PRIOR_GENERATORS
+from mmdet.models.task_modules.prior_generators import AnchorGenerator
 from torch.nn.modules.utils import _pair
 
 # TODO: Need to fix pylint issues

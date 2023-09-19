@@ -2,10 +2,11 @@
 
 import torch
 import torch.nn.functional as F
-from mmdet.core import multi_apply, reduce_mean
 from mmdet.models.builder import HEADS
 from mmdet.models.dense_heads.yolox_head import YOLOXHead
 from mmdet.models.losses.utils import weight_reduce_loss
+from mmdet.utils.dist_utils import reduce_mean
+from mmdet.utils.misc import multi_apply
 
 from otx.algorithms.detection.adapters.mmdet.models.heads.cross_dataset_detector_head import (
     TrackingLossDynamicsMixIn,

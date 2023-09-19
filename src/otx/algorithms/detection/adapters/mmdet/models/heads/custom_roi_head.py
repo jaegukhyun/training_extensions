@@ -4,11 +4,12 @@
 #
 
 import torch
-from mmdet.core import bbox2roi, multi_apply
 from mmdet.models.builder import HEADS, build_head, build_roi_extractor
 from mmdet.models.losses import accuracy
 from mmdet.models.roi_heads.bbox_heads.convfc_bbox_head import Shared2FCBBoxHead
 from mmdet.models.roi_heads.standard_roi_head import StandardRoIHead
+from mmdet.structures.bbox import bbox2roi
+from mmdet.utils.misc import multi_apply
 
 from otx.algorithms.detection.adapters.mmdet.models.heads.cross_dataset_detector_head import (
     CrossDatasetDetectorHead,
