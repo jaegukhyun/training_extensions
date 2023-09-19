@@ -4,10 +4,11 @@
 #
 import os.path as osp
 
-from mmcv.parallel import MMDataParallel
-from mmcv.runner import BaseRunner
-from mmcv.runner.hooks import HOOKS, Hook
-from mmcv.utils import Config, ConfigDict
+from mmengine.config import Config, ConfigDict
+from mmengine.hooks import Hook
+from mmengine.registry import HOOKS
+from mmengine.runner import Runner
+from torch.nn.parallel import DataParallel
 
 from otx.algorithms.common.adapters.mmcv.utils.config_utils import (
     update_or_add_custom_hook,
@@ -30,10 +31,10 @@ class LossDynamicsTrackingHook(Hook):
 
     def before_run(self, runner):
         """Before run, check the type of model for safe running."""
-        if not isinstance(runner.model, MMDataParallel):
-            raise NotImplementedError(f"Except MMDataParallel, runner.model={type(runner.model)} is not supported now.")
+        if not isinstance(runner.model, DataParallel):
+            raise NotImplementedError(f"Except DataParallel, runner.model={type(runner.model)} is not supported now.")
 
-    def before_train_epoch(self, runner: BaseRunner):
+    def before_train_epoch(self, runner: Runner):
         """Initialize the tracker for training loss dynamics tracking.
 
         Tracker needs the training dataset for initialization.
@@ -41,7 +42,7 @@ class LossDynamicsTrackingHook(Hook):
         """
         self._init_tracker(runner, runner.data_loader.dataset.otx_dataset)
 
-    def _get_tracker(self, runner: BaseRunner) -> LossDynamicsTracker:
+    def _get_tracker(self, runner: Runner) -> LossDynamicsTracker:
         model = runner.model.module
 
         if not isinstance(model, LossDynamicsTrackingMixin):
@@ -50,7 +51,7 @@ class LossDynamicsTrackingHook(Hook):
             )
         return model.loss_dyns_tracker
 
-    def _init_tracker(self, runner: BaseRunner, otx_dataset: DatasetEntity) -> None:
+    def _init_tracker(self, runner: Runner, otx_dataset: DatasetEntity) -> None:
         tracker = self._get_tracker(runner)
         if tracker.initialized:
             return
@@ -66,7 +67,7 @@ class LossDynamicsTrackingHook(Hook):
         tracker = self._get_tracker(runner)
         tracker.accumulate(runner.outputs, runner.iter)
 
-    def after_run(self, runner: BaseRunner) -> None:
+    def after_run(self, runner: Runner) -> None:
         """Export loss dynamics statistics to Datumaro format."""
 
         tracker = self._get_tracker(runner)

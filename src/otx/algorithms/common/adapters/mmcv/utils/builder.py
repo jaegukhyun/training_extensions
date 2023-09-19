@@ -5,7 +5,7 @@
 
 from typing import Callable
 
-from mmcv import Config
+from mmengine.config import Config
 from torch.utils.data import DataLoader, Dataset
 
 # pylint: disable-next=unused-import

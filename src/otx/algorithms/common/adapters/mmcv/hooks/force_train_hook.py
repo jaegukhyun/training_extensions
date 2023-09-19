@@ -14,7 +14,8 @@
 # See the License for the specific language governing permissions
 # and limitations under the License.
 
-from mmcv.runner.hooks import HOOKS, Hook
+from mmengine.hooks import Hook
+from mmengine.registry import HOOKS
 
 from otx.algorithms.common.utils.logger import get_logger
 

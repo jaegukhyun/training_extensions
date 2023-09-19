@@ -6,9 +6,10 @@
 import math
 from math import cos, pi
 
-from mmcv.parallel import is_module_wrapper
-from mmcv.runner import HOOKS, BaseRunner, Hook
-from mmcv.runner.hooks.ema import EMAHook
+from mmengine.hooks import EMAHook, Hook
+from mmengine.model.wrappers.utils import is_model_wrapper
+from mmengine.registry import HOOKS
+from mmengine.runner import Runner
 
 from otx.algorithms.common.utils.logger import get_logger
 
@@ -30,7 +31,7 @@ class CustomModelEMAHook(EMAHook):
 
         Register ema parameter as ``named_buffer`` to model
         """
-        if is_module_wrapper(runner.model):
+        if is_model_wrapper(runner.model):
             model = runner.model.module.model_s if hasattr(runner.model.module, "model_s") else runner.model.module
         else:
             model = runner.model.model_s if hasattr(runner.model, "model_s") else runner.model
@@ -76,12 +77,12 @@ class EMAMomentumUpdateHook(Hook):
         self.end_momentum = end_momentum
         self.update_interval = update_interval
 
-    def before_train_epoch(self, runner: BaseRunner):
+    def before_train_epoch(self, runner: Runner):
         """Called before_train_epoch in EMAMomentumUpdateHook."""
         if not self.by_epoch:
             return
 
-        if is_module_wrapper(runner.model):
+        if is_model_wrapper(runner.model):
             model = runner.model.module
         else:
             model = runner.model
@@ -100,12 +101,12 @@ class EMAMomentumUpdateHook(Hook):
             )
             model.momentum = updated_m
 
-    def before_train_iter(self, runner: BaseRunner):
+    def before_train_iter(self, runner: Runner):
         """Called before_train_iter in EMAMomentumUpdateHook."""
         if self.by_epoch:
             return
 
-        if is_module_wrapper(runner.model):
+        if is_model_wrapper(runner.model):
             model = runner.model.module
         else:
             model = runner.model
@@ -124,10 +125,10 @@ class EMAMomentumUpdateHook(Hook):
             )
             model.momentum = updated_m
 
-    def after_train_iter(self, runner: BaseRunner):
+    def after_train_iter(self, runner: Runner):
         """Called after_train_iter in EMAMomentumUpdateHook."""
         if self.every_n_iters(runner, self.update_interval):
-            if is_module_wrapper(runner.model):
+            if is_model_wrapper(runner.model):
                 runner.model.module.momentum_update()
             else:
                 runner.model.momentum_update()

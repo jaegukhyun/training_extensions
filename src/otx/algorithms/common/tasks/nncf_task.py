@@ -22,7 +22,7 @@ from copy import deepcopy
 from typing import Dict, List, Optional
 
 import torch
-from mmcv.utils import ConfigDict
+from mmengine.config import ConfigDict
 
 import otx.algorithms.common.adapters.mmcv.nncf.patches  # noqa: F401  # pylint: disable=unused-import
 from otx.algorithms.common.adapters.mmcv.utils import (

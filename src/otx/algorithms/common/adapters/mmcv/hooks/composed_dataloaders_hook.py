@@ -5,7 +5,8 @@
 
 from typing import List, Sequence, Union
 
-from mmcv.runner import HOOKS, Hook
+from mmengine.hooks import Hook
+from mmengine.registry import HOOKS
 from torch.utils.data import DataLoader
 
 from otx.algorithms.common.adapters.torch.dataloaders import ComposedDL

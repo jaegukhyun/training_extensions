@@ -1,8 +1,9 @@
 """Two crop transform hook."""
 from typing import List
 
-from mmcv.runner import BaseRunner
-from mmcv.runner.hooks import HOOKS, Hook
+from mmengine.hooks import Hook
+from mmengine.registry import HOOKS
+from mmengine.runner import Runner
 
 from otx.algorithms.common.utils.logger import get_logger
 
@@ -31,7 +32,7 @@ class TwoCropTransformHook(Hook):
         self.interval = interval
         self.cnt = 0
 
-    def _get_dataset(self, runner: BaseRunner):
+    def _get_dataset(self, runner: Runner):
         """Get dataset to handle `is_both`."""
         if hasattr(runner.data_loader.dataset, "dataset"):
             # for RepeatDataset
@@ -48,7 +49,7 @@ class TwoCropTransformHook(Hook):
             if transform.__class__.__name__ == "TwoCropTransform":
                 return transform
 
-    def before_train_epoch(self, runner: BaseRunner):
+    def before_train_epoch(self, runner: Runner):
         """Called before_train_epoch in TwoCropTransformHook."""
         # Always keep `TwoCropTransform` enabled.
         if self.interval == 1:
@@ -62,7 +63,7 @@ class TwoCropTransformHook(Hook):
         else:
             two_crop_transform.is_both = False
 
-    def after_train_iter(self, runner: BaseRunner):
+    def after_train_iter(self, runner: Runner):
         """Called after_train_iter in TwoCropTransformHook."""
         # Always keep `TwoCropTransform` enabled.
         if self.interval == 1:

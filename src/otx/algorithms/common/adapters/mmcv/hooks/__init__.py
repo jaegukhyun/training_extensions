@@ -31,9 +31,11 @@ from .early_stopping_hook import (
     ReduceLROnPlateauLrUpdaterHook,
     StopLossNanTrainingHook,
 )
-from .eval_hook import CustomEvalHook, DistCustomEvalHook
+
+# from .eval_hook import CustomEvalHook, DistCustomEvalHook
 from .force_train_hook import ForceTrainModeHook
-from .fp16_sam_optimizer_hook import Fp16SAMOptimizerHook
+
+# from .fp16_sam_optimizer_hook import Fp16SAMOptimizerHook
 from .ib_loss_hook import IBLossHook
 from .logger_hook import LoggerReplaceHook, OTXLoggerHook
 from .loss_dynamics_tracking_hook import LossDynamicsTrackingHook
@@ -48,7 +50,8 @@ from .recording_forward_hook import (
     EigenCamHook,
     FeatureVectorHook,
 )
-from .sam_optimizer_hook import SAMOptimizerHook
+
+# from .sam_optimizer_hook import SAMOptimizerHook
 from .semisl_cls_hook import SemiSLClsHook
 from .task_adapt_hook import TaskAdaptHook
 from .two_crop_transform_hook import TwoCropTransformHook
@@ -61,14 +64,14 @@ __all__ = [
     "CheckpointHookWithValResults",
     "EnsureCorrectBestCheckpointHook",
     "ComposedDataLoadersHook",
-    "CustomEvalHook",
-    "DistCustomEvalHook",
+    # "CustomEvalHook",
+    # "DistCustomEvalHook",
     "EarlyStoppingHook",
     "LazyEarlyStoppingHook",
     "ReduceLROnPlateauLrUpdaterHook",
     "EMAMomentumUpdateHook",
     "ForceTrainModeHook",
-    "Fp16SAMOptimizerHook",
+    # "Fp16SAMOptimizerHook",
     "StopLossNanTrainingHook",
     "IBLossHook",
     "OTXLoggerHook",
@@ -82,7 +85,7 @@ __all__ = [
     "EigenCamHook",
     "ActivationMapHook",
     "FeatureVectorHook",
-    "SAMOptimizerHook",
+    # "SAMOptimizerHook",
     "SaveInitialWeightHook",
     "SemiSLClsHook",
     "TaskAdaptHook",

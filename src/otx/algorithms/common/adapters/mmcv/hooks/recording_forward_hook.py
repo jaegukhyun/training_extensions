@@ -22,10 +22,10 @@ import numpy as np
 import torch
 from torch.nn import LayerNorm
 
-from otx.algorithms.classification import MMCLS_AVAILABLE
+from otx.algorithms.classification import MMPRETRAIN_AVAILABLE
 
-if MMCLS_AVAILABLE:
-    from mmcls.models.necks.gap import GlobalAveragePooling
+if MMPRETRAIN_AVAILABLE:
+    from mmpretrain.models.necks.gap import GlobalAveragePooling
 
 
 class BaseRecordingForwardHook(ABC):
@@ -223,7 +223,7 @@ class ReciproCAMHook(BaseRecordingForwardHook):
         return logits
 
     def _get_mosaic_feature_map(self, feature_map: torch.Tensor, c: int, h: int, w: int) -> torch.Tensor:
-        if MMCLS_AVAILABLE and self._neck is not None and isinstance(self._neck, GlobalAveragePooling):
+        if MMPRETRAIN_AVAILABLE and self._neck is not None and isinstance(self._neck, GlobalAveragePooling):
             # Optimization workaround for the GAP case (simulate GAP with more simple compute graph)
             # Possible due to static sparsity of mosaic_feature_map
             # Makes the downstream GAP operation to be dummy

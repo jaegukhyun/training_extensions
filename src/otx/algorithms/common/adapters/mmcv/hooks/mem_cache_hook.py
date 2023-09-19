@@ -3,7 +3,8 @@
 # SPDX-License-Identifier: Apache-2.0
 #
 
-from mmcv.runner.hooks import HOOKS, Hook
+from mmengine.hooks import Hook
+from mmengine.registry import HOOKS
 
 from otx.core.data.caching.mem_cache_handler import MemCacheHandlerSingleton
 

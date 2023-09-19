@@ -7,8 +7,8 @@ from typing import Dict, List, Tuple
 
 import torch
 from mmcv.runner import BaseModule
-from mmcv.utils import Config
 from mmdet.core import bbox_cxcywh_to_xyxy, bbox_xyxy_to_cxcywh, multi_apply, reduce_mean
+from mmengine.config import Config
 from torch import Tensor
 
 

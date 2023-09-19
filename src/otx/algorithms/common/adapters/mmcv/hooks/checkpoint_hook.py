@@ -4,12 +4,68 @@
 #
 
 # Copyright (c) Open-MMLab. All rights reserved.
+from collections import OrderedDict
 from pathlib import Path
-from typing import Optional
+from typing import List, Optional
 
-from mmcv.runner import BaseRunner
-from mmcv.runner.dist_utils import allreduce_params, master_only
-from mmcv.runner.hooks.hook import HOOKS, Hook
+import torch
+from mmengine.dist import get_dist_info, master_only
+from mmengine.hooks import Hook
+from mmengine.registry import HOOKS
+from mmengine.runner import Runner
+from torch import distributed as dist
+from torch._utils import (
+    _flatten_dense_tensors,
+    _take_tensors,
+    _unflatten_dense_tensors,
+)
+
+
+def allreduce_params(params: List[torch.nn.Parameter], coalesce: bool = True, bucket_size_mb: int = -1) -> None:
+    """Allreduce parameters.
+
+    It's from mmcv 1.x version, which is deprecated.
+    If this function is no needed, it's good to remove this.
+
+    Args:
+        params (list[torch.nn.Parameter]): List of parameters or buffers
+            of a model.
+        coalesce (bool, optional): Whether allreduce parameters as a whole.
+            Defaults to True.
+        bucket_size_mb (int, optional): Size of bucket, the unit is MB.
+            Defaults to -1.
+    """
+    _, world_size = get_dist_info()
+    if world_size == 1:
+        return
+    params = [param.data for param in params]
+    if coalesce:
+        _allreduce_coalesced(params, world_size, bucket_size_mb)
+    else:
+        for tensor in params:
+            dist.all_reduce(tensor.div_(world_size))
+
+
+def _allreduce_coalesced(tensors: torch.Tensor, world_size: int, bucket_size_mb: int = -1) -> None:
+    """It's from mmcv 1.x version, which is deprecated."""
+    if bucket_size_mb > 0:
+        bucket_size_bytes = bucket_size_mb * 1024 * 1024
+        buckets = _take_tensors(tensors, bucket_size_bytes)
+    else:
+        buckets = OrderedDict()
+        for tensor in tensors:
+            tp = tensor.type()
+            if tp not in buckets:
+                buckets[tp] = []
+            buckets[tp].append(tensor)
+        buckets = buckets.values()
+
+    for bucket in buckets:
+        flat_tensors = _flatten_dense_tensors(bucket)
+        dist.all_reduce(flat_tensors)
+        flat_tensors.div_(world_size)
+        for tensor, synced in zip(bucket, _unflatten_dense_tensors(flat_tensors, bucket)):
+            tensor.copy_(synced)
 
 
 @HOOKS.register_module()
@@ -151,7 +207,7 @@ class EnsureCorrectBestCheckpointHook(Hook):
     created in the last epoch.
     """
 
-    def after_run(self, runner: BaseRunner):
+    def after_run(self, runner: Runner):
         """Called after train epoch hooks."""
         runner.call_hook("after_train_epoch")
 

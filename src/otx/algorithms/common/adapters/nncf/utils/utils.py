@@ -46,7 +46,7 @@ def load_checkpoint(model, filename, map_location=None, strict=False):
         dict or OrderedDict: The loaded checkpoint.
     """
     #  from nncf.torch import load_state
-    from mmcv.runner import load_state_dict
+    from mmengine.runner.checkpoint import load_state_dict
 
     checkpoint = torch.load(filename, map_location=map_location)
     nncf_state = None

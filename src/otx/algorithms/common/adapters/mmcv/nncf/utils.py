@@ -9,8 +9,9 @@ from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
 import numpy as np
 import torch
-from mmcv import Config
-from mmcv.parallel import DataContainer, collate, scatter
+from mmengine.config import Config
+
+# from mmcv.parallel import DataContainer, collate, scatter
 from torch import nn
 from torch.utils.data import DataLoader
 

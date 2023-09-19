@@ -6,9 +6,10 @@
 from collections import defaultdict
 from typing import Any, Dict, Optional
 
-from mmcv.runner import BaseRunner
-from mmcv.runner.dist_utils import master_only
-from mmcv.runner.hooks import HOOKS, Hook, LoggerHook
+from mmengine.dist import master_only
+from mmengine.hooks import Hook, LoggerHook
+from mmengine.registry import HOOKS
+from mmengine.runner import Runner
 
 from otx.algorithms.common.utils.logger import get_logger
 
@@ -58,7 +59,7 @@ class OTXLoggerHook(LoggerHook):
         self.curves = curves if curves is not None else defaultdict(self.Curve)
 
     @master_only
-    def log(self, runner: BaseRunner):
+    def log(self, runner: Runner):
         """Log function for OTXLoggerHook."""
         tags = self.get_loggable_tags(runner, allow_text=False, tags_to_skip=self._TAGS_TO_SKIP)
         if runner.max_epochs is not None:
@@ -75,12 +76,12 @@ class OTXLoggerHook(LoggerHook):
             curve.x.append(normalized_iter)
             curve.y.append(value)
 
-    def before_run(self, runner: BaseRunner):
+    def before_run(self, runner: Runner):
         """Called before_run in OTXLoggerHook."""
         super().before_run(runner)
         self.curves.clear()
 
-    def after_train_epoch(self, runner: BaseRunner):
+    def after_train_epoch(self, runner: Runner):
         """Called after_train_epoch in OTXLoggerHook."""
         # Iteration counter is increased right after the last iteration in the epoch,
         # temporarily decrease it back.

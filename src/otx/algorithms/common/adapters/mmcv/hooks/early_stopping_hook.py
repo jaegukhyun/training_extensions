@@ -6,9 +6,10 @@
 from math import inf, isnan
 from typing import List, Optional
 
-from mmcv.runner import BaseRunner, LrUpdaterHook
-from mmcv.runner.hooks import HOOKS, Hook
-from mmcv.utils import print_log
+from mmengine.hooks import Hook, ParamSchedulerHook
+from mmengine.logging import print_log
+from mmengine.registry import HOOKS
+from mmengine.runner import Runner
 
 from otx.algorithms.common.utils.logger import get_logger
 
@@ -17,7 +18,7 @@ logger = get_logger()
 # pylint: disable=too-many-arguments, too-many-instance-attributes
 
 
-@HOOKS.register_module()
+@HOOKS.register_module(force=True)
 class EarlyStoppingHook(Hook):
     """Cancel training when a metric has stopped improving.
 
@@ -107,23 +108,23 @@ class EarlyStoppingHook(Hook):
         self.key_indicator = key_indicator
         self.compare_func = self.rule_map[self.rule]
 
-    def before_run(self, runner: BaseRunner):
+    def before_run(self, runner: Runner):
         """Called before_run in EarlyStoppingHook."""
         if runner.max_epochs is None:
             self.by_epoch = False
         for hook in runner.hooks:
-            if isinstance(hook, LrUpdaterHook):
+            if isinstance(hook, ParamSchedulerHook):
                 self.warmup_iters = hook.warmup_iters
                 break
         if getattr(self, "warmup_iters", None) is None:
-            raise ValueError("LrUpdaterHook must be registered to runner.")
+            raise ValueError("ParamSchedulerHook must be registered to runner.")
 
-    def after_train_iter(self, runner: BaseRunner):
+    def after_train_iter(self, runner: Runner):
         """Called after every training iter to evaluate the results."""
         if not self.by_epoch:
             self._do_check_stopping(runner)
 
-    def after_train_epoch(self, runner: BaseRunner):
+    def after_train_epoch(self, runner: Runner):
         """Called after every training epoch to evaluate the results."""
         if self.by_epoch:
             self._do_check_stopping(runner)
@@ -210,7 +211,7 @@ class LazyEarlyStoppingHook(EarlyStoppingHook):
 
 
 @HOOKS.register_module(force=True)
-class ReduceLROnPlateauLrUpdaterHook(LrUpdaterHook):
+class ReduceLROnPlateauLrUpdaterHook(ParamSchedulerHook):
     """Reduce learning rate when a metric has stopped improving.
 
     Models often benefit from reducing the learning rate by a factor of 2-10 once learning stagnates.
@@ -304,20 +305,20 @@ class ReduceLROnPlateauLrUpdaterHook(LrUpdaterHook):
         self.key_indicator = key_indicator
         self.compare_func = self.rule_map[self.rule]
 
-    def _is_check_timing(self, runner: BaseRunner) -> bool:
+    def _is_check_timing(self, runner: Runner) -> bool:
         """Check whether current epoch or iter is multiple of self.interval, skip during warmup interations."""
         check_time = self.after_each_n_epochs if self.by_epoch else self.after_each_n_iters
         return check_time(runner, self.interval) and (self.warmup_iters <= runner.iter)
 
-    def after_each_n_epochs(self, runner: BaseRunner, interval: int) -> bool:
+    def after_each_n_epochs(self, runner: Runner, interval: int) -> bool:
         """Check whether current epoch is a next epoch after multiples of interval."""
         return runner.epoch % interval == 0 if interval > 0 and runner.epoch != 0 else False
 
-    def after_each_n_iters(self, runner: BaseRunner, interval: int) -> bool:
+    def after_each_n_iters(self, runner: Runner, interval: int) -> bool:
         """Check whether current iter is a next iter after multiples of interval."""
         return runner.iter % interval == 0 if interval > 0 and runner.iter != 0 else False
 
-    def get_lr(self, runner: BaseRunner, base_lr: float):
+    def get_lr(self, runner: Runner, base_lr: float):
         """Called get_lr in ReduceLROnPlateauLrUpdaterHook."""
         if self.current_lr < 0:
             self.current_lr = base_lr
@@ -365,7 +366,7 @@ class ReduceLROnPlateauLrUpdaterHook(LrUpdaterHook):
             self.current_lr = max(self.current_lr * self.factor, self.min_lr)
         return self.current_lr
 
-    def before_run(self, runner: BaseRunner):
+    def before_run(self, runner: Runner):
         """Called before_run in ReduceLROnPlateauLrUpdaterHook."""
         # TODO: remove overloaded method after fixing the issue
         #  https://github.com/open-mmlab/mmdetection/issues/6572
@@ -382,7 +383,7 @@ class ReduceLROnPlateauLrUpdaterHook(LrUpdaterHook):
 class StopLossNanTrainingHook(Hook):
     """StopLossNanTrainingHook."""
 
-    def after_train_iter(self, runner: BaseRunner):
+    def after_train_iter(self, runner: Runner):
         """Called after_train_iter in StopLossNanTrainingHook."""
         if isnan(runner.outputs["loss"].item()):
             logger.warning("Early Stopping since loss is NaN")

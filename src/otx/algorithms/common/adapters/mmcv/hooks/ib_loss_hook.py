@@ -3,8 +3,9 @@
 # SPDX-License-Identifier: Apache-2.0
 #
 
-from mmcv.parallel import is_module_wrapper
-from mmcv.runner import HOOKS, Hook
+from mmengine.hooks import Hook
+from mmengine.model.wrappers.utils import is_model_wrapper
+from mmengine.registry import HOOKS
 
 
 @HOOKS.register_module()
@@ -37,6 +38,6 @@ class IBLossHook(Hook):
 
     def _get_model_loss(self, runner):
         model = runner.model
-        if is_module_wrapper(model):
+        if is_model_wrapper(model):
             model = model.module
         return model.head.compute_loss

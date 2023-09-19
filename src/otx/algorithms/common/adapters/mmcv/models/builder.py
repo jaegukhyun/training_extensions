@@ -15,7 +15,7 @@
 # and limitations under the License.
 
 from mmcv.cnn import MODELS as MMCV_MODELS
-from mmcv.utils import Registry
+from mmengine.registry import Registry
 
 BACKBONES = Registry("models", parent=MMCV_MODELS, scope="otx")
 TORCHVISION_BACKBONES = Registry("models", parent=MMCV_MODELS, scope="torchvision")

@@ -19,10 +19,10 @@ from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
 import numpy as np
 import torch
-from mmcv import Config, ConfigDict
-from mmcv.utils.config import BASE_KEY, DEPRECATION_KEY
-from mmcv.utils.misc import import_modules_from_strings
-from mmcv.utils.path import check_file_exist
+from mmengine.config import Config, ConfigDict
+from mmengine.config.config import BASE_KEY, DEPRECATION_KEY
+from mmengine.utils.misc import import_modules_from_strings
+from mmengine.utils.path import check_file_exist
 
 from otx.algorithms.common.configs.configuration_enums import InputSizePreset
 from otx.algorithms.common.utils.logger import get_logger
@@ -79,9 +79,9 @@ class OTXConfig(Config):
                     # delete imported module
                     del sys.modules[temp_module_name]
                 elif filename.endswith((".yml", ".yaml", ".json")):
-                    import mmcv
+                    import mmengine
 
-                    cfg_dict = mmcv.load(temp_config_file.name)
+                    cfg_dict = mmengine.fileio.io.load(temp_config_file.name)
 
         # check deprecation information
         if DEPRECATION_KEY in cfg_dict:

@@ -9,8 +9,8 @@ from typing import Any, Dict, List, Optional, Tuple
 
 import numpy as np
 import torch
-from mmcv.runner import CheckpointLoader
-from mmcv.utils import Config, ConfigDict
+from mmengine.config import Config, ConfigDict
+from mmengine.runner.checkpoint import CheckpointLoader
 from torch import distributed as dist
 
 from otx.algorithms.common.adapters.mmcv.utils import (

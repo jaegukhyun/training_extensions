@@ -3,7 +3,9 @@
 # SPDX-License-Identifier: Apache-2.0
 #
 
-from mmcv.runner import HOOKS, Hook, get_dist_info
+from mmengine.dist import get_dist_info
+from mmengine.hooks import Hook
+from mmengine.registry import HOOKS
 from torch.utils.data import DataLoader
 
 from otx.algorithms.common.adapters.torch.dataloaders.samplers import (

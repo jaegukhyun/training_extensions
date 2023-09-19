@@ -5,8 +5,9 @@
 
 import math
 
-from mmcv.parallel import is_module_wrapper
-from mmcv.runner import HOOKS, Hook
+from mmengine.hooks import Hook
+from mmengine.model.wrappers.utils import is_model_wrapper
+from mmengine.registry import HOOKS
 
 
 @HOOKS.register_module()
@@ -58,6 +59,6 @@ class SemiSLClsHook(Hook):
 
     def _get_model(self, runner):
         model = runner.model
-        if is_module_wrapper(model):
+        if is_model_wrapper(model):
             model = model.module
         return model

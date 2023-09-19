@@ -11,9 +11,9 @@ import torch
 import torch.nn.functional as F
 from mmcv.cnn.bricks.registry import TRANSFORMER_LAYER_SEQUENCE
 from mmcv.runner import BaseModule
-from mmcv.utils import Config
 from mmdet.core import bbox_xyxy_to_cxcywh
 from mmdet.models.utils.transformer import DeformableDetrTransformerDecoder, inverse_sigmoid
+from mmengine.config import Config
 from torch import Tensor, nn
 
 

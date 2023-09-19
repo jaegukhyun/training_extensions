@@ -9,8 +9,9 @@ import os
 from typing import Literal, Union, overload
 
 import torch
-from mmcv import Config
-from mmcv.parallel import MMDataParallel, MMDistributedDataParallel
+from mmengine.config import Config
+from mmengine.model.wrappers.distributed import MMDistributedDataParallel
+from torch.nn.parallel import DataParallel
 
 
 @overload
@@ -29,7 +30,7 @@ def build_data_parallel(
     config: Config,
     *,
     distributed: Literal[False] = False,
-) -> MMDataParallel:
+) -> DataParallel:
     ...
 
 
@@ -39,7 +40,7 @@ def build_data_parallel(
     config: Config,
     *,
     distributed: bool,
-) -> Union[MMDataParallel, MMDistributedDataParallel]:
+) -> Union[DataParallel, MMDistributedDataParallel]:
     ...
 
 
@@ -48,10 +49,10 @@ def build_data_parallel(
     config: Config,
     *,
     distributed: bool = False,
-) -> Union[MMDataParallel, MMDistributedDataParallel]:
+) -> Union[DataParallel, MMDistributedDataParallel]:
     """Prepare model for execution.
 
-    Return MMDataParallel or MMDistributedDataParallel model.
+    Return DataParallel or MMDistributedDataParallel model.
 
     :param model: Model.
     :param config: config.
@@ -73,11 +74,11 @@ def build_data_parallel(
             )
         else:
             model = model.cuda(config.gpu_ids[0])
-            model = MMDataParallel(model, device_ids=config.gpu_ids)
+            model = DataParallel(model, device_ids=config.gpu_ids)
     else:
         # temporarily disable cuda for cpu data parallel
         bak = torch.cuda.is_available
         setattr(torch.cuda, "is_available", lambda: False)
-        model = MMDataParallel(model, device_ids=[])
+        model = DataParallel(model, device_ids=[])
         torch.cuda.is_available = bak
     return model

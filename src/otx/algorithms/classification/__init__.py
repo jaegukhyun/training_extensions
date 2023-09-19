@@ -14,9 +14,9 @@
 # See the License for the specific language governing permissions
 # and limitations under the License.
 
-MMCLS_AVAILABLE = True
+MMPRETRAIN_AVAILABLE = True
 
 try:
-    import mmcls  # noqa: F401
+    import mmpretrain  # noqa: F401
 except ImportError:
-    MMCLS_AVAILABLE = False
+    MMPRETRAIN_AVAILABLE = False

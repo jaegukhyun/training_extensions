@@ -8,7 +8,7 @@
 from collections.abc import Mapping
 from typing import Any, Dict, List, Literal, Sequence, Tuple, Union, overload
 
-from mmcv import Config, ConfigDict
+from mmengine.config import Config, ConfigDict
 
 
 @overload

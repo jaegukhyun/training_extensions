@@ -7,8 +7,10 @@
 import os
 from typing import Callable
 
-from mmcv.runner import BaseRunner, EpochBasedRunner
-from mmcv.runner.hooks import HOOKS, Hook
+from mmengine.hooks import Hook
+from mmengine.registry import HOOKS
+from mmengine.runner import Runner
+from mmengine.runner.loops import EpochBasedTrainLoop
 
 from otx.algorithms.common.utils.logger import get_logger
 
@@ -32,18 +34,18 @@ class CancelTrainingHook(Hook):
         self.interval = interval
 
     @staticmethod
-    def _check_for_stop_signal(runner: BaseRunner):
+    def _check_for_stop_signal(runner: Runner):
         """Log _check_for_stop_signal for CancelTrainingHook."""
         work_dir = runner.work_dir
         stop_filepath = os.path.join(work_dir, ".stop_training")
         if os.path.exists(stop_filepath):
-            if isinstance(runner, EpochBasedRunner):
+            if isinstance(runner.train_loop, EpochBasedTrainLoop):
                 epoch = runner.epoch
                 runner._max_epochs = epoch  # Force runner to stop by pretending it has reached it's max_epoch
             runner.should_stop = True  # Set this flag to true to stop the current training epoch
             os.remove(stop_filepath)
 
-    def after_train_iter(self, runner: BaseRunner):
+    def after_train_iter(self, runner: Runner):
         """Log after_train_iter for CancelTrainingHook."""
         if not self.every_n_iters(runner, self.interval):
             return
@@ -70,7 +72,7 @@ class CancelInterfaceHook(Hook):
             logger.warning("cancel already requested.")
             return
 
-        if isinstance(self.runner, EpochBasedRunner):
+        if isinstance(self.runner.train_loop, EpochBasedTrainLoop):
             epoch = self.runner.epoch
             self.runner._max_epochs = epoch  # Force runner to stop by pretending it has reached it's max_epoch
         self.runner.should_stop = True  # Set this flag to true to stop the current training epoch

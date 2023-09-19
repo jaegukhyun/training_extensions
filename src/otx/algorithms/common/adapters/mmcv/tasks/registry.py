@@ -3,6 +3,6 @@
 # SPDX-License-Identifier: Apache-2.0
 #
 
-from mmcv.utils import Registry
+from mmengine.registry import Registry
 
 EXPLAINERS = Registry("explainers")

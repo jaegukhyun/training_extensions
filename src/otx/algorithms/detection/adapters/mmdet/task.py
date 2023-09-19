@@ -14,12 +14,13 @@ from typing import Any, Dict, Optional, Union
 
 import torch
 from mmcv.runner import wrap_fp16_model
-from mmcv.utils import Config, ConfigDict, get_git_hash
 from mmdet import __version__
 from mmdet.apis import single_gpu_test, train_detector
 from mmdet.datasets import build_dataloader, build_dataset, replace_ImageToTensor
 from mmdet.models.detectors import DETR, TwoStageDetector
 from mmdet.utils import collect_env
+from mmengine.config import Config, ConfigDict
+from mmengine.utils import get_git_hash
 
 from otx.algorithms.common.adapters.mmcv.hooks import LossDynamicsTrackingHook
 from otx.algorithms.common.adapters.mmcv.hooks.recording_forward_hook import (
