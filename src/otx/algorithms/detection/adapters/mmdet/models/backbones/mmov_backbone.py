@@ -3,12 +3,12 @@
 # SPDX-License-Identifier: Apache-2.0
 #
 
-from mmdet.models.builder import BACKBONES
+from mmdet.registry import MODELS
 
 from otx.core.ov.models.mmov_model import MMOVModel
 
 
-@BACKBONES.register_module()
+@MODELS.register_module()
 class MMOVBackbone(MMOVModel):
     """MMOVBackbone Class."""
 

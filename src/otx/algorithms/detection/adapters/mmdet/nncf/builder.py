@@ -9,8 +9,8 @@ from typing import Optional, Union
 import torch
 from mmcv.parallel import DataContainer
 from mmcv.runner import CheckpointLoader
-from mmdet.utils import get_root_logger
 from mmengine.config import Config, ConfigDict
+from mmengine.logging import MMLogger
 
 from otx.algorithms.common.adapters.mmcv.nncf.runners import NNCF_META_KEY
 from otx.algorithms.common.adapters.mmcv.utils import (
@@ -22,7 +22,7 @@ from otx.algorithms.common.adapters.nncf.compression import NNCFMetaState
 from otx.algorithms.common.adapters.nncf.utils import no_nncf_trace
 from otx.algorithms.detection.adapters.mmdet.utils import build_detector
 
-logger = get_root_logger()
+logger = MMLogger.get_current_instance()
 
 
 def build_nncf_detector(  # pylint: disable=too-many-locals,too-many-statements

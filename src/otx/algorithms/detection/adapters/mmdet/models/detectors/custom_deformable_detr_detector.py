@@ -6,8 +6,8 @@
 
 import functools
 
-from mmdet.models.builder import DETECTORS
 from mmdet.models.detectors.deformable_detr import DeformableDETR
+from mmdet.registry import MODELS
 
 from otx.algorithms.common.adapters.mmcv.hooks.recording_forward_hook import (
     ActivationMapHook,
@@ -20,7 +20,7 @@ from otx.algorithms.common.utils.task_adapt import map_class_names
 logger = get_logger()
 
 
-@DETECTORS.register_module()
+@MODELS.register_module()
 class CustomDeformableDETR(DeformableDETR):
     """Custom Deformable DETR with task adapt.
 

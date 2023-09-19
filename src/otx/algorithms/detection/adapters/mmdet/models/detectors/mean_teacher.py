@@ -8,7 +8,7 @@ import functools
 
 import numpy as np
 import torch
-from mmdet.models import DETECTORS, build_detector
+from mmdet.models import MODELS, build_detector
 from mmdet.models.detectors import BaseDetector
 from mmdet.structures.bbox import bbox2result, bbox2roi
 from mmdet.structures.mask.structures import BitmapMasks
@@ -23,7 +23,7 @@ logger = get_logger()
 # pylint: disable=abstract-method, too-many-locals, unused-argument
 
 
-@DETECTORS.register_module()
+@MODELS.register_module()
 class MeanTeacher(SAMDetectorMixin, BaseDetector):
     """Mean teacher framework for detection and instance segmentation."""
 

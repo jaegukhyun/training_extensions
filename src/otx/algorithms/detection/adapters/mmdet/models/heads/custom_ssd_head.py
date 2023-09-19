@@ -8,11 +8,11 @@
 
 import torch
 from mmcv.cnn import build_activation_layer
-from mmdet.models.builder import HEADS, build_loss
 from mmdet.models.dense_heads.ssd_head import SSDHead
 from mmdet.models.losses import smooth_l1_loss
 from mmdet.models.task_modules.prior_generators import anchor_inside_flags
 from mmdet.models.utils.misc import unmap
+from mmdet.registry import MODELS
 from torch import nn
 
 from otx.algorithms.detection.adapters.mmdet.models.heads.cross_dataset_detector_head import TrackingLossDynamicsMixIn
@@ -23,7 +23,7 @@ from otx.algorithms.detection.adapters.mmdet.models.loss_dyns import (
 # pylint: disable=too-many-arguments, too-many-locals
 
 
-@HEADS.register_module()
+@MODELS.register_module()
 class CustomSSDHead(SSDHead):
     """CustomSSDHead class for OTX."""
 
@@ -36,7 +36,7 @@ class CustomSSDHead(SSDHead):
                 reduction="none",
                 loss_weight=1.0,
             )
-        self.loss_cls = build_loss(loss_cls)
+        self.loss_cls = MODELS.build(loss_cls)
         self.bg_loss_weight = bg_loss_weight
         self.loss_balancing = loss_balancing
         if self.loss_balancing:
@@ -192,7 +192,7 @@ class CustomSSDHead(SSDHead):
         return (loss_cls, loss_reg)
 
 
-@HEADS.register_module()
+@MODELS.register_module()
 class CustomSSDHeadTrackingLossDynamics(TrackingLossDynamicsMixIn, CustomSSDHead):
     """CustomSSDHead which supports tracking loss dynamics."""
 

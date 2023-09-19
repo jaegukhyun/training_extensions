@@ -6,8 +6,8 @@
 import functools
 
 import torch
-from mmdet.models.builder import DETECTORS
 from mmdet.models.detectors.yolox import YOLOX
+from mmdet.registry import MODELS
 
 from otx.algorithms.common.adapters.mmcv.hooks.recording_forward_hook import (
     FeatureVectorHook,
@@ -32,7 +32,7 @@ logger = get_logger()
 # pylint: disable=too-many-locals, unused-argument, protected-access, abstract-method
 
 
-@DETECTORS.register_module()
+@MODELS.register_module()
 class CustomYOLOX(SAMDetectorMixin, DetLossDynamicsTrackingMixin, L2SPDetectorMixin, YOLOX):
     """SAM optimizer & L2SP regularizer enabled custom YOLOX."""
 

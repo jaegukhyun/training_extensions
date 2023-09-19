@@ -4,12 +4,12 @@
 #
 
 import torch
-from mmdet.models.builder import HEADS, build_head, build_roi_extractor
 from mmdet.models.losses import accuracy
 from mmdet.models.roi_heads.bbox_heads.convfc_bbox_head import Shared2FCBBoxHead
 from mmdet.models.roi_heads.standard_roi_head import StandardRoIHead
+from mmdet.models.utils.misc import multi_apply
+from mmdet.registry import MODELS
 from mmdet.structures.bbox import bbox2roi
-from mmdet.utils.misc import multi_apply
 
 from otx.algorithms.detection.adapters.mmdet.models.heads.cross_dataset_detector_head import (
     CrossDatasetDetectorHead,
@@ -22,16 +22,16 @@ from otx.algorithms.detection.adapters.mmdet.models.losses.cross_focal_loss impo
 # pylint: disable=abstract-method, arguments-renamed, too-many-locals, too-many-arguments
 
 
-@HEADS.register_module()
+@MODELS.register_module()
 class CustomRoIHead(StandardRoIHead):
     """CustomROIHead class for OTX."""
 
     def init_bbox_head(self, bbox_roi_extractor, bbox_head):
         """Initialize ``bbox_head``."""
-        self.bbox_roi_extractor = build_roi_extractor(bbox_roi_extractor)
+        self.bbox_roi_extractor = MODELS.build(bbox_roi_extractor)
         if bbox_head.type == "Shared2FCBBoxHead":
             bbox_head.type = "CustomConvFCBBoxHead"
-        self.bbox_head = build_head(bbox_head)
+        self.bbox_head = MODELS.build(bbox_head)
 
     def _bbox_forward_train(self, x, sampling_results, gt_bboxes, gt_labels, img_metas):
         """Run forward function and calculate loss for box head in training."""
@@ -55,7 +55,7 @@ class CustomRoIHead(StandardRoIHead):
         return bbox_results
 
 
-@HEADS.register_module()
+@MODELS.register_module()
 class CustomConvFCBBoxHead(Shared2FCBBoxHead, CrossDatasetDetectorHead):
     """CustomConvFCBBoxHead class for OTX."""
 

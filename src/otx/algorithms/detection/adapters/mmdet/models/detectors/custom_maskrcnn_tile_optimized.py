@@ -8,7 +8,7 @@ import numpy as np
 import torch
 from mmcls.models.necks.gap import GlobalAveragePooling
 from mmcv.cnn import ConvModule
-from mmdet.models.builder import DETECTORS
+from mmdet.registry import MODELS
 from torch import nn
 
 from otx.algorithms.common.adapters.mmdeploy import is_mmdeploy_enabled
@@ -91,7 +91,7 @@ class TileClassifier(torch.nn.Module):
 
 
 # pylint: disable=too-many-ancestors
-@DETECTORS.register_module()
+@MODELS.register_module()
 class CustomMaskRCNNTileOptimized(CustomMaskRCNN):
     """Custom MaskRCNN detector with tile classifier.
 

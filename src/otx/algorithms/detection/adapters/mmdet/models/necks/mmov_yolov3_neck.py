@@ -7,14 +7,14 @@ from typing import Dict, List, Optional, Union
 
 import openvino.runtime as ov
 import torch
-from mmdet.models.builder import NECKS
 from mmdet.models.necks.yolo_neck import YOLOV3Neck
+from mmdet.registry import MODELS
 
 from otx.core.ov.models.mmov_model import MMOVModel
 from otx.core.ov.models.parser_mixin import ParserMixin  # type: ignore[attr-defined]
 
 
-@NECKS.register_module()
+@MODELS.register_module()
 class MMOVYOLOV3Neck(YOLOV3Neck, ParserMixin):
     """MMOVYOLOV3Neck class for OMZ models."""
 

@@ -4,12 +4,12 @@
 #
 
 import torch
-from mmdet.models.builder import HEADS
 from mmdet.models.dense_heads.atss_head import ATSSHead
 from mmdet.models.task_modules.prior_generators import anchor_inside_flags
+from mmdet.models.utils.misc import multi_apply, unmap
+from mmdet.registry import MODELS
 from mmdet.structures.bbox.bbox_overlaps import bbox_overlaps
 from mmdet.utils.dist_utils import reduce_mean
-from mmdet.utils.misc import multi_apply, unmap
 
 from otx.algorithms.detection.adapters.mmdet.models.heads.cross_dataset_detector_head import (
     CrossDatasetDetectorHead,
@@ -25,7 +25,7 @@ EPS = 1e-12
 # pylint: disable=too-many-arguments, too-many-locals,
 
 
-@HEADS.register_module()
+@MODELS.register_module()
 class CustomATSSHead(CrossDatasetDetectorHead, ATSSHead):
     """CustomATSSHead for OTX template."""
 
@@ -262,7 +262,7 @@ class CustomATSSHead(CrossDatasetDetectorHead, ATSSHead):
         )
 
 
-@HEADS.register_module()
+@MODELS.register_module()
 class CustomATSSHeadTrackingLossDynamics(TrackingLossDynamicsMixIn, CustomATSSHead):
     """CustomATSSHead which supports tracking loss dynamics."""
 

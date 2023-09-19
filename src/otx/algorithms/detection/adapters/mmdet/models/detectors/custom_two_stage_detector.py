@@ -5,8 +5,8 @@
 
 import functools
 
-from mmdet.models.builder import DETECTORS
 from mmdet.models.detectors.two_stage import TwoStageDetector
+from mmdet.registry import MODELS
 
 from otx.algorithms.common.utils.logger import get_logger
 from otx.algorithms.common.utils.task_adapt import map_class_names
@@ -19,7 +19,7 @@ logger = get_logger()
 # pylint: disable=too-many-locals, unused-argument
 
 
-@DETECTORS.register_module()
+@MODELS.register_module()
 class CustomTwoStageDetector(SAMDetectorMixin, L2SPDetectorMixin, TwoStageDetector):
     """SAM optimizer & L2SP regularizer enabled custom 2-stage detector."""
 

@@ -13,7 +13,7 @@ from mmengine.runner.checkpoint import load_checkpoint
 
 from otx.algorithms.common.utils.logger import LEVEL
 
-logger = MMLogger.get_curent_instance()
+logger = MMLogger.get_current_instance()
 
 
 def build_detector(

@@ -6,8 +6,8 @@
 import functools
 
 import torch
-from mmdet.models.builder import DETECTORS
 from mmdet.models.detectors.mask_rcnn import MaskRCNN
+from mmdet.registry import MODELS
 
 from otx.algorithms.common.adapters.mmcv.hooks.recording_forward_hook import (
     FeatureVectorHook,
@@ -24,7 +24,7 @@ logger = get_logger()
 # pylint: disable=too-many-locals, protected-access, unused-argument
 
 
-@DETECTORS.register_module()
+@MODELS.register_module()
 class CustomMaskRCNN(SAMDetectorMixin, L2SPDetectorMixin, MaskRCNN):
     """CustomMaskRCNN Class for mmdetection detectors."""
 

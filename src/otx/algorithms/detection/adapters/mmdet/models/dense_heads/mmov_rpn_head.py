@@ -8,8 +8,8 @@ from typing import Dict, List, Optional, Union
 
 import openvino.runtime as ov
 import torch
-from mmdet.models.builder import HEADS
 from mmdet.models.dense_heads.rpn_head import RPNHead
+from mmdet.registry import MODELS
 
 from otx.algorithms.common.utils.logger import get_logger
 from otx.core.ov.models.mmov_model import MMOVModel
@@ -20,7 +20,7 @@ logger = get_logger()
 # pylint: disable=too-many-instance-attributes, too-many-arguments, keyword-arg-before-vararg
 
 
-@HEADS.register_module()
+@MODELS.register_module()
 class MMOVRPNHead(RPNHead):
     """MMOVRPNHead class for OTX."""
 

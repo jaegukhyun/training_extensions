@@ -7,8 +7,8 @@ from copy import deepcopy
 from typing import Dict, List, Optional, Union
 
 import openvino.runtime as ov
-from mmdet.models.builder import HEADS
 from mmdet.models.roi_heads.mask_heads.fcn_mask_head import FCNMaskHead
+from mmdet.registry import MODELS
 
 from otx.core.ov.models.mmov_model import MMOVModel
 
@@ -16,7 +16,7 @@ from otx.core.ov.models.mmov_model import MMOVModel
 # pylint: disable=too-many-instance-attributes, too-many-arguments, keyword-arg-before-vararg, dangerous-default-value
 
 
-@HEADS.register_module()
+@MODELS.register_module()
 class MMOVMaskHead(FCNMaskHead):
     """MMOVMaskHead class for OTX."""
 

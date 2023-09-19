@@ -4,8 +4,8 @@
 #
 
 import torch
-from mmdet.models.builder import HEADS
 from mmdet.models.dense_heads.vfnet_head import VFNetHead
+from mmdet.registry import MODELS
 from mmdet.sturctures.bbox import bbox_overlaps, distance2bbox
 from mmdet.utils.dist_utils import reduce_mean
 
@@ -23,7 +23,7 @@ from .custom_atss_head import CustomATSSHeadTrackingLossDynamics
 # pylint: disable=too-many-ancestors, too-many-arguments, too-many-statements, too-many-locals
 
 
-@HEADS.register_module()
+@MODELS.register_module()
 class CustomVFNetHead(CrossDatasetDetectorHead, VFNetHead):
     """CustomVFNetHead class for OTX."""
 
@@ -240,7 +240,7 @@ class CustomVFNetHead(CrossDatasetDetectorHead, VFNetHead):
         return self.get_fcos_targets(mlvl_points, gt_bboxes, gt_labels, img_metas)
 
 
-@HEADS.register_module()
+@MODELS.register_module()
 class CustomVFNetHeadTrackingLossDynamics(TrackingLossDynamicsMixIn, CustomVFNetHead):
     """CustomVFNetHead which supports tracking loss dynamics."""
 

@@ -2,11 +2,11 @@
 
 import torch
 import torch.nn.functional as F
-from mmdet.models.builder import HEADS
 from mmdet.models.dense_heads.yolox_head import YOLOXHead
 from mmdet.models.losses.utils import weight_reduce_loss
+from mmdet.models.utils.misc import multi_apply
+from mmdet.registry import MODELS
 from mmdet.utils.dist_utils import reduce_mean
-from mmdet.utils.misc import multi_apply
 
 from otx.algorithms.detection.adapters.mmdet.models.heads.cross_dataset_detector_head import (
     TrackingLossDynamicsMixIn,
@@ -14,7 +14,7 @@ from otx.algorithms.detection.adapters.mmdet.models.heads.cross_dataset_detector
 from otx.algorithms.detection.adapters.mmdet.models.loss_dyns import TrackingLossType
 
 
-@HEADS.register_module()
+@MODELS.register_module()
 class CustomYOLOXHead(YOLOXHead):
     """CustomYOLOXHead class for OTX."""
 
@@ -22,7 +22,7 @@ class CustomYOLOXHead(YOLOXHead):
         super().__init__(*args, **kwargs)
 
 
-@HEADS.register_module()
+@MODELS.register_module()
 class CustomYOLOXHeadTrackingLossDynamics(TrackingLossDynamicsMixIn, CustomYOLOXHead):
     """CustomYOLOXHead which supports loss dynamics tracking."""
 

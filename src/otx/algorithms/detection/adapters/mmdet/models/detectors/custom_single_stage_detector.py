@@ -6,8 +6,8 @@
 import functools
 
 import torch
-from mmdet.models.builder import DETECTORS
 from mmdet.models.detectors.single_stage import SingleStageDetector
+from mmdet.registry import MODELS
 
 from otx.algorithms.common.adapters.mmcv.hooks.recording_forward_hook import (
     FeatureVectorHook,
@@ -30,7 +30,7 @@ logger = get_logger()
 # pylint: disable=abstract-method, too-many-locals, unused-argument, protected-access
 
 
-@DETECTORS.register_module()
+@MODELS.register_module()
 class CustomSingleStageDetector(SAMDetectorMixin, DetLossDynamicsTrackingMixin, L2SPDetectorMixin, SingleStageDetector):
     """SAM optimizer & L2SP regularizer enabled custom SSD."""
 

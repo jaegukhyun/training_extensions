@@ -4,7 +4,7 @@
 # SPDX-License-Identifier: Apache-2.0
 #
 
-from mmdet.models.builder import DETECTORS
+from mmdet.registry import MODELS
 
 from otx.algorithms.common.utils.logger import get_logger
 from otx.algorithms.detection.adapters.mmdet.models.detectors import CustomDINO
@@ -12,7 +12,7 @@ from otx.algorithms.detection.adapters.mmdet.models.detectors import CustomDINO
 logger = get_logger()
 
 
-@DETECTORS.register_module()
+@MODELS.register_module()
 class CustomLiteDINO(CustomDINO):
     """Custom Lite-DINO <https://arxiv.org/pdf/2303.07335.pdf> for object detection."""
 

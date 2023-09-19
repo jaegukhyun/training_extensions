@@ -3,13 +3,13 @@
 # SPDX-License-Identifier: Apache-2.0
 #
 
-from mmdet.models.builder import HEADS
 from mmdet.models.dense_heads.retina_head import RetinaHead
+from mmdet.registry import MODELS
 
 # pylint: disable=too-many-arguments
 
 
-@HEADS.register_module()
+@MODELS.register_module()
 class CustomRetinaHead(RetinaHead):
     """CustomRetinaHead class for OTX."""
 

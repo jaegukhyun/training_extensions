@@ -5,8 +5,8 @@
 
 import functools
 
-from mmdet.models.builder import DETECTORS
 from mmdet.models.detectors.vfnet import VFNet
+from mmdet.registry import MODELS
 
 from otx.algorithms.common.utils.logger import get_logger
 from otx.algorithms.common.utils.task_adapt import map_class_names
@@ -22,7 +22,7 @@ logger = get_logger()
 # pylint: disable=abstract-method, too-many-locals, unused-argument
 
 
-@DETECTORS.register_module()
+@MODELS.register_module()
 class CustomVFNet(SAMDetectorMixin, DetLossDynamicsTrackingMixin, L2SPDetectorMixin, VFNet):
     """SAM optimizer & L2SP regularizer enabled custom VFNet."""
 

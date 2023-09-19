@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: Apache-2.0
 #
 
-from mmdet.models import LOSSES
+from mmdet.registry import MODELS
 from mmengine.runner.checkpoint import _load_checkpoint
 from torch import nn
 
@@ -11,7 +11,7 @@ from torch import nn
 # pylint: disable=unused-argument
 
 
-@LOSSES.register_module()
+@MODELS.register_module()
 class L2SPLoss(nn.Module):
     """L2-SP regularization Class for mmdetection adapter."""
 

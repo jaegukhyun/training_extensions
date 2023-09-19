@@ -4,7 +4,7 @@
 # SPDX-License-Identifier: Apache-2.0
 #
 
-from mmdet.models.builder import DETECTORS
+from mmdet.registry import MODELS
 
 from otx.algorithms.common.adapters.mmcv.hooks.recording_forward_hook import (
     ActivationMapHook,
@@ -17,7 +17,7 @@ from otx.algorithms.detection.adapters.mmdet.models.detectors import CustomDefor
 logger = get_logger()
 
 
-@DETECTORS.register_module()
+@MODELS.register_module()
 class CustomDINO(CustomDeformableDETR):
     """Custom DINO detector."""
 

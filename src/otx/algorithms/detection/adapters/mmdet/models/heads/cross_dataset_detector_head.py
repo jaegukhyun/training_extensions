@@ -9,10 +9,10 @@ from collections import defaultdict
 from typing import Dict, Tuple
 
 import torch
-from mmdet.models.builder import HEADS
 from mmdet.models.dense_heads.base_dense_head import BaseDenseHead
 from mmdet.models.losses.utils import weight_reduce_loss
-from mmdet.utils.misc import images_to_levels, multi_apply
+from mmdet.models.utils.misc import images_to_levels, multi_apply
+from mmdet.registry import MODELS
 
 from otx.algorithms.detection.adapters.mmdet.models.loss_dyns import (
     LossAccumulator,
@@ -23,7 +23,7 @@ from otx.algorithms.detection.adapters.mmdet.models.loss_dyns import (
 # pylint: disable=too-many-locals, too-many-arguments, abstract-method
 
 
-@HEADS.register_module()
+@MODELS.register_module()
 class CrossDatasetDetectorHead(BaseDenseHead):
     """Head class for Ignore labels."""
 
@@ -256,7 +256,7 @@ class CrossDatasetDetectorHead(BaseDenseHead):
         return valid_label_mask
 
 
-@HEADS.register_module()
+@MODELS.register_module()
 class TrackingLossDynamicsMixIn:
     """Mix-In class for tracking loss dynamics."""
 

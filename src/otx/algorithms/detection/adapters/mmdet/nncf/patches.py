@@ -7,7 +7,6 @@
 
 from functools import partial
 
-from mmdet.models.builder import HEADS
 from mmdet.models.dense_heads.base_dense_head import BaseDenseHead
 from mmdet.models.dense_heads.base_mask_head import BaseMaskHead
 from mmdet.models.detectors.base import BaseDetector
@@ -18,6 +17,7 @@ from mmdet.models.roi_heads.mask_heads.fcn_mask_head import FCNMaskHead
 from mmdet.models.task_modules.assigners import BaseAssigner
 from mmdet.models.task_modules.builder import BBOX_ASSIGNERS, BBOX_SAMPLERS
 from mmdet.models.task_modules.samplers import BaseSampler
+from mmdet.registry import MODELS
 
 from otx.algorithms.common.adapters.mmdeploy.utils import is_mmdeploy_enabled
 from otx.algorithms.common.adapters.nncf import (
@@ -97,7 +97,7 @@ def _wrap_register_module(self, fn, *args, **kwargs):
 
 
 # for mmdet defined heads
-for head_cls in [BaseDenseHead, BaseMaskHead, BaseRoIHead] + list(HEADS.module_dict.values()):
+for head_cls in [BaseDenseHead, BaseMaskHead, BaseRoIHead] + list(MODELS.module_dict.values()):
     _wrap_mmdet_head(head_cls)
 
 # for mmdet defined bbox assigners
@@ -110,7 +110,7 @@ for sampler_cls in [BaseSampler] + list(BBOX_SAMPLERS.module_dict.values()):
     _wrap_mmdet_sampler(sampler_cls)
 
 # for custom defined
-NNCF_PATCHER.patch(HEADS._register_module, _wrap_register_module)
+NNCF_PATCHER.patch(MODELS._register_module, _wrap_register_module)
 NNCF_PATCHER.patch(BBOX_ASSIGNERS._register_module, _wrap_register_module)
 NNCF_PATCHER.patch(BBOX_SAMPLERS._register_module, _wrap_register_module)
 NNCF_PATCHER.patch(

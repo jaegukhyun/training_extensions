@@ -6,8 +6,8 @@
 from typing import Dict, List, Optional, Union
 
 import openvino.runtime as ov
-from mmdet.models.builder import NECKS
 from mmdet.models.necks.fpn import FPN
+from mmdet.registry import MODELS
 from torch import nn
 
 from otx.core.ov.models.mmov_model import MMOVModel
@@ -16,7 +16,7 @@ from otx.core.ov.models.mmov_model import MMOVModel
 # pylint: disable=keyword-arg-before-vararg, too-many-locals
 
 
-@NECKS.register_module()
+@MODELS.register_module()
 class MMOVFPN(FPN):
     """MMOVFPN class for OMZ models."""
 

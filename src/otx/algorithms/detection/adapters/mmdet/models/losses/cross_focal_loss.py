@@ -5,9 +5,9 @@
 
 import torch
 import torch.nn.functional as F
-from mmdet.models import LOSSES
 from mmdet.models.losses.focal_loss import py_sigmoid_focal_loss, sigmoid_focal_loss
 from mmdet.models.losses.varifocal_loss import varifocal_loss
+from mmdet.registry import MODELS
 from torch import nn
 
 # pylint: disable=too-many-arguments, too-many-locals, too-many-instance-attributes, unused-argument
@@ -70,7 +70,7 @@ def cross_sigmoid_focal_loss(
     return loss
 
 
-@LOSSES.register_module()
+@MODELS.register_module()
 class CrossSigmoidFocalLoss(nn.Module):
     """CrossSigmoidFocalLoss class for ignore labels with sigmoid."""
 
@@ -124,7 +124,7 @@ class CrossSigmoidFocalLoss(nn.Module):
         return loss_cls
 
 
-@LOSSES.register_module()
+@MODELS.register_module()
 class OrdinaryFocalLoss(nn.Module):
     """Focal loss without balancing."""
 

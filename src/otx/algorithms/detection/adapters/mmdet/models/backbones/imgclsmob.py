@@ -6,9 +6,9 @@
 import os
 
 from mmcv.cnn import build_activation_layer, build_norm_layer
-from mmdet.models.builder import BACKBONES
-from mmdet.utils.logger import get_root_logger
+from mmdet.registry import MODELS
 from mmengine.dist import get_dist_info
+from mmengine.logging import MMLogger
 from pytorchcv.model_provider import _models
 from pytorchcv.models.model_store import download_model
 from torch import distributed, nn
@@ -95,7 +95,7 @@ def init_weights(self, pretrained=True):
 
 def generate_backbones():
     """Generate backbones of pytorchcv funtion."""
-    logger = get_root_logger()
+    logger = MMLogger.get_current_instance()
 
     for model_name, model_getter in _models.items():
 
@@ -155,7 +155,7 @@ def generate_backbones():
             CustomModelGetter.__name__ = model_name
             return CustomModelGetter
 
-        BACKBONES.register_module(name=model_name, module=closure(model_name, model_getter))
+        MODELS.register_module(name=model_name, module=closure(model_name, model_getter))
 
 
 generate_backbones()

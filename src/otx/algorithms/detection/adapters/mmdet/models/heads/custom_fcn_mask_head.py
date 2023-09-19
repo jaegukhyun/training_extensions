@@ -4,13 +4,13 @@
 #
 
 import torch
-from mmdet.models.builder import HEADS
 from mmdet.models.roi_heads.mask_heads.fcn_mask_head import FCNMaskHead
+from mmdet.registry import MODELS
 
 from otx.algorithms.common.adapters.mmdeploy.utils import is_mmdeploy_enabled
 
 
-@HEADS.register_module()
+@MODELS.register_module()
 class CustomFCNMaskHead(FCNMaskHead):
     """Custom FCN Mask Head for fast mask evaluation."""
 

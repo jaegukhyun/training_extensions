@@ -8,7 +8,7 @@ from typing import Dict, List, Optional, Union
 import openvino.runtime as ov
 import torch
 from mmcv.cnn import ConvModule, DepthwiseSeparableConvModule
-from mmdet.models.builder import NECKS
+from mmdet.registry import MODELS
 from mmengin.module import BaseModule
 from torch import nn
 
@@ -138,7 +138,7 @@ class L2Norm(nn.Module):
         return (self.weight[None, :, None, None].float().expand_as(x_float) * x_float / norm).type_as(x)
 
 
-@NECKS.register_module()
+@MODELS.register_module()
 class MMOVSSDNeck(SSDNeck):
     """MMOVSSDNeck class for OMZ models."""
 

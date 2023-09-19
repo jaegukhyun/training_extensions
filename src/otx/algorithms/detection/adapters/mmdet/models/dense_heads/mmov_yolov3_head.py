@@ -8,8 +8,8 @@ from typing import Dict, List, Optional, Union
 
 import openvino.runtime as ov
 import torch
-from mmdet.models.builder import HEADS
 from mmdet.models.dense_heads.yolo_head import YOLOV3Head
+from mmdet.registry import MODELS
 
 from otx.core.ov.models.mmov_model import MMOVModel
 
@@ -17,7 +17,7 @@ from otx.core.ov.models.mmov_model import MMOVModel
 # pylint: disable=too-many-instance-attributes, keyword-arg-before-vararg
 
 
-@HEADS.register_module()
+@MODELS.register_module()
 class MMOVYOLOV3Head(YOLOV3Head):
     """MMOVYOLOV3Head class for OTX."""
 

@@ -4,16 +4,16 @@
 #
 
 import torch
-from mmdet.models.builder import ROI_EXTRACTORS
 from mmdet.models.roi_heads.roi_extractors.single_level_roi_extractor import (
     SingleRoIExtractor as OriginSingleRoIExtractor,
 )
+from mmdet.registry import MODELS
 from torch import nn
 from torch.nn import functional as F
 from torch.nn.modules.utils import _pair
 
 
-@ROI_EXTRACTORS.register_module(force=True)
+@MODELS.register_module(force=True)
 class SingleRoIExtractor(OriginSingleRoIExtractor):
     """SingleRoIExtractor class for mmdetection adapters."""
 

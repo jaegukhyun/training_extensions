@@ -8,8 +8,8 @@ from typing import Dict, List, Optional, Union
 
 import openvino.runtime as ov
 import torch
-from mmdet.models.builder import HEADS
 from mmdet.models.roi_heads.bbox_heads.bbox_head import BBoxHead
+from mmdet.registry import MODELS
 
 from otx.core.ov.models.mmov_model import MMOVModel
 
@@ -17,7 +17,7 @@ from otx.core.ov.models.mmov_model import MMOVModel
 # pylint: disable=too-many-instance-attributes, too-many-arguments, keyword-arg-before-vararg, dangerous-default-value
 
 
-@HEADS.register_module()
+@MODELS.register_module()
 class MMOVBBoxHead(BBoxHead):
     """MMOVBBoxHead class for OTX."""
 

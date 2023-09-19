@@ -7,12 +7,12 @@ from typing import Any, Dict, List, Optional, Tuple
 
 import torch
 import torch.nn.functional as F
-from mmdet.models.builder import HEADS
 from mmdet.models.dense_heads import DeformableDETRHead
+from mmdet.models.utils.misc import multi_apply
 from mmdet.models.utils.transformer import inverse_sigmoid
+from mmdet.registry import MODELS
 from mmdet.structures.bbox import bbox_cxcywh_to_xyxy, bbox_xyxy_to_cxcywh
 from mmdet.utils.dist_utils import reduce_mean
-from mmdet.utils.misc import multi_apply
 from mmengine.config import Config
 from torch import Tensor
 
@@ -20,7 +20,7 @@ from otx.algorithms.detection.adapters.mmdet.models.heads.detr_head import DETRH
 from otx.algorithms.detection.adapters.mmdet.models.layers import CdnQueryGenerator
 
 
-@HEADS.register_module()
+@MODELS.register_module()
 class CustomDINOHead(DeformableDETRHead, DETRHeadExtension):
     """Head of DINO.
 
