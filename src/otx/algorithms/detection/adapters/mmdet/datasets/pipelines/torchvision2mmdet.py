@@ -4,14 +4,14 @@
 #
 
 import numpy as np
-from mmdet.datasets import PIPELINES
-from mmdet.datasets.pipelines.formatting import ImageToTensor, to_tensor
+from mmdet.datasets.transforms.formatting import ImageToTensor, to_tensor
+from mmdet.registry import TRANSFORMS
 from mmengine.registry import build_from_cfg
 from PIL import Image, ImageFilter
 from torchvision import transforms as T
 
 
-@PIPELINES.register_module()
+@TRANSFORMS.register_module()
 class ColorJitter(T.ColorJitter):
     """MMDet adapter."""
 
@@ -28,7 +28,7 @@ class ColorJitter(T.ColorJitter):
         return outputs
 
 
-@PIPELINES.register_module()
+@TRANSFORMS.register_module()
 class RandomGrayscale(T.RandomGrayscale):
     """MMDet adapter."""
 
@@ -45,7 +45,7 @@ class RandomGrayscale(T.RandomGrayscale):
         return outputs
 
 
-@PIPELINES.register_module()
+@TRANSFORMS.register_module(force=True)
 class RandomErasing(T.RandomErasing):
     """MMDet adapter."""
 
@@ -62,7 +62,7 @@ class RandomErasing(T.RandomErasing):
         return outputs
 
 
-@PIPELINES.register_module()
+@TRANSFORMS.register_module()
 class RandomGaussianBlur:
     """Gaussian blur augmentation in SimCLR https://arxiv.org/abs/2002.05709."""
 
@@ -91,18 +91,18 @@ class RandomGaussianBlur:
         return repr_str
 
 
-@PIPELINES.register_module()
+@TRANSFORMS.register_module()
 class RandomApply(T.RandomApply):
     """MMDet adapter."""
 
     def __init__(self, transform_cfgs, p=0.5):
         transforms = []
         for transform_cfg in transform_cfgs:
-            transforms.append(build_from_cfg(transform_cfg, PIPELINES))
+            transforms.append(build_from_cfg(transform_cfg, TRANSFORMS))
         super().__init__(transforms, p=p)
 
 
-@PIPELINES.register_module()
+@TRANSFORMS.register_module()
 class NDArrayToTensor(ImageToTensor):
     """MMDet adapter."""
 
@@ -117,7 +117,7 @@ class NDArrayToTensor(ImageToTensor):
         return results
 
 
-@PIPELINES.register_module()
+@TRANSFORMS.register_module()
 class NDArrayToPILImage:
     """NDArrayToPILImage."""
 
@@ -138,7 +138,7 @@ class NDArrayToPILImage:
         return repr_str
 
 
-@PIPELINES.register_module()
+@TRANSFORMS.register_module()
 class PILImageToNDArray:
     """PILImageToNDArray."""
 
@@ -159,7 +159,7 @@ class PILImageToNDArray:
         return repr_str
 
 
-@PIPELINES.register_module()
+@TRANSFORMS.register_module()
 class BranchImage:
     """BranchImage."""
 

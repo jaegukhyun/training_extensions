@@ -6,13 +6,15 @@
 import functools
 import inspect
 from collections import defaultdict
-from typing import Dict, Tuple
+from typing import Dict, List, Tuple
 
 import torch
 from mmdet.models.dense_heads.base_dense_head import BaseDenseHead
 from mmdet.models.losses.utils import weight_reduce_loss
 from mmdet.models.utils.misc import images_to_levels, multi_apply
 from mmdet.registry import MODELS
+from mmdet.utils import InstanceList, OptInstanceList
+from torch import Tensor
 
 from otx.algorithms.detection.adapters.mmdet.models.loss_dyns import (
     LossAccumulator,
@@ -29,24 +31,20 @@ class CrossDatasetDetectorHead(BaseDenseHead):
 
     def get_atss_targets(
         self,
-        anchor_list,
-        valid_flag_list,
-        gt_bboxes_list,
-        img_metas,
-        gt_bboxes_ignore_list=None,
-        gt_labels_list=None,
-        label_channels=1,
-        unmap_outputs=True,
-    ):
-        """Get targets for Detection head.
+        anchor_list: List[List[Tensor]],
+        valid_flag_list: List[List[Tensor]],
+        batch_gt_instances: InstanceList,
+        batch_img_metas: List[dict],
+        batch_gt_instances_ignore: OptInstanceList = None,
+        unmap_outputs: bool = True,
+    ) -> tuple:
+        """Get targets for ATSS head.
 
         This method is almost the same as `AnchorHead.get_targets()`. Besides
         returning the targets as the parent method does, it also returns the
         anchors as the first element of the returned tuple.
-        However, if the detector's head loss uses CrossSigmoidFocalLoss,
-        the labels_weights_list consists of (binarized label schema * weights) of batch images
         """
-        num_imgs = len(img_metas)
+        num_imgs = len(batch_img_metas)
         assert len(anchor_list) == len(valid_flag_list) == num_imgs
 
         # anchor number of multi levels
@@ -60,10 +58,8 @@ class CrossDatasetDetectorHead(BaseDenseHead):
             valid_flag_list[i] = torch.cat(valid_flag_list[i])
 
         # compute targets for each image
-        if gt_bboxes_ignore_list is None:
-            gt_bboxes_ignore_list = [None for _ in range(num_imgs)]
-        if gt_labels_list is None:
-            gt_labels_list = [None for _ in range(num_imgs)]
+        if batch_gt_instances_ignore is None:
+            batch_gt_instances_ignore = [None] * num_imgs
         (
             all_anchors,
             all_labels,
@@ -72,44 +68,41 @@ class CrossDatasetDetectorHead(BaseDenseHead):
             all_bbox_weights,
             pos_inds_list,
             neg_inds_list,
+            sampling_results_list,
         ) = multi_apply(
-            self._get_target_single,
+            self._get_targets_single,
             anchor_list,
             valid_flag_list,
             num_level_anchors_list,
-            gt_bboxes_list,
-            gt_bboxes_ignore_list,
-            gt_labels_list,
-            img_metas,
-            label_channels=label_channels,
+            batch_gt_instances,
+            batch_img_metas,
+            batch_gt_instances_ignore,
             unmap_outputs=unmap_outputs,
         )
-        # no valid anchors
-        if not all(labels is not None for labels in all_labels):
-            return None
-        # sampled anchors of all images
-        num_total_pos = sum(max(inds.numel(), 1) for inds in pos_inds_list)
-        num_total_neg = sum(max(inds.numel(), 1) for inds in neg_inds_list)
+        # Get `avg_factor` of all images, which calculate in `SamplingResult`.
+        # When using sampling method, avg_factor is usually the sum of
+        # positive and negative priors. When using `PseudoSampler`,
+        # `avg_factor` is usually equal to the number of positive priors.
+        avg_factor = sum([results.avg_factor for results in sampling_results_list])
         # split targets to a list w.r.t. multiple levels
         anchors_list = images_to_levels(all_anchors, num_level_anchors)
         labels_list = images_to_levels(all_labels, num_level_anchors)
-        valid_label_mask = self.get_valid_label_mask(img_metas=img_metas, all_labels=all_labels)
-        valid_label_mask = [i.to(anchor_list[0].device) for i in valid_label_mask]
-        if len(valid_label_mask) > 0:
-            valid_label_mask = images_to_levels(valid_label_mask, num_level_anchors)
-
         label_weights_list = images_to_levels(all_label_weights, num_level_anchors)
         bbox_targets_list = images_to_levels(all_bbox_targets, num_level_anchors)
         bbox_weights_list = images_to_levels(all_bbox_weights, num_level_anchors)
+        # Changed part from mmdet
+        valid_label_mask = self.get_valid_label_mask(img_metas=batch_img_metas, all_labels=all_labels)
+        valid_label_mask = [i.to(anchor_list[0].device) for i in valid_label_mask]
+        if len(valid_label_mask) > 0:
+            valid_label_mask = images_to_levels(valid_label_mask, num_level_anchors)
         return (
             anchors_list,
             labels_list,
             label_weights_list,
             bbox_targets_list,
             bbox_weights_list,
+            avg_factor,
             valid_label_mask,
-            num_total_pos,
-            num_total_neg,
         )
 
     def get_fcos_targets(self, points, gt_bboxes_list, gt_labels_list, img_metas):

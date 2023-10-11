@@ -8,8 +8,8 @@ import functools
 
 import numpy as np
 import torch
-from mmdet.models import MODELS, build_detector
 from mmdet.models.detectors import BaseDetector
+from mmdet.registry import MODELS
 from mmdet.structures.bbox import bbox2result, bbox2roi
 from mmdet.structures.mask.structures import BitmapMasks
 
@@ -43,7 +43,7 @@ class MeanTeacher(SAMDetectorMixin, BaseDetector):
         self.min_pseudo_label_ratio = min_pseudo_label_ratio
         cfg = kwargs.copy()
         cfg["type"] = arch_type
-        self.model_s = build_detector(cfg)
+        self.model_s = MODELS.build(cfg)
         self.model_t = copy.deepcopy(self.model_s)
         # warmup for first epochs
         self.enable_unlabeled_loss(False)

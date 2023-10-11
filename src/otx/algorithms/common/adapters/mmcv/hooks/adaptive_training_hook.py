@@ -4,6 +4,7 @@
 #
 
 import math
+from typing import Dict, Sequence
 
 from mmengine.hooks import CheckpointHook, Hook, ParamSchedulerHook
 from mmengine.registry import HOOKS
@@ -68,24 +69,14 @@ class AdaptiveTrainSchedulingHook(Hook):
         self._initialized = False
         self._original_interval = None
 
-    def before_run(self, runner: Runner):
-        """Before run."""
-        if self.enable_eval_before_run:
-            train_loop = runner.train_loop
-            self._original_interval = train_loop.val_interval
-            train_loop.val_interval = 1
-            train_loop.val_begin = 0
-
-    def before_train_iter(self, runner: Runner):
+    def before_train_iter(self, runner: Runner, batch_idx: int, data_batch: Sequence[Dict]):
         """Before train iter."""
-        if self.enable_eval_before_run and self._original_interval is not None:
-            train_loop = runner.train_loop
-            train_loop.val_interval = self._original_interval
-            self._original_interval = None
+        if self.enable_eval_before_run and not self._initialized:
+            runner.val_loop.run()
 
         if self.enable_adaptive_interval_hook and not self._initialized:
             self.max_interval = min(self.max_interval, runner.max_epochs - runner.epoch)
-            iter_per_epoch = len(runner.data_loader)
+            iter_per_epoch = len(runner.train_dataloader)
             adaptive_interval = self.get_adaptive_interval(iter_per_epoch)
             self.update_validation_interval(runner, adaptive_interval)
             for hook in runner.hooks:
@@ -122,3 +113,4 @@ class AdaptiveTrainSchedulingHook(Hook):
         adaptive_interval = min(adaptive_interval, limit)
         logger.info(f"Update Validation interval: {runner.train_loop.val_interval} -> {adaptive_interval}")
         runner.train_loop.val_interval = adaptive_interval
+        runner.train_loop.dynamic_intervals = [adaptive_interval]

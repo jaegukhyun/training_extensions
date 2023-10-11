@@ -6,20 +6,17 @@
 import glob
 import io
 import os
-import time
 from contextlib import nullcontext
 from copy import deepcopy
 from functools import partial
 from typing import Any, Dict, Optional, Union
 
 import torch
-from mmdet import __version__
-from mmdet.apis import single_gpu_test, train_detector
-from mmdet.datasets import build_dataloader, build_dataset, replace_ImageToTensor
 from mmdet.models.detectors import DETR, TwoStageDetector
+from mmdet.registry import DATASETS
 from mmdet.utils import collect_env
 from mmengine.config import Config, ConfigDict
-from mmengine.utils import get_git_hash
+from mmengine.runner import Runner
 
 from otx.algorithms.common.adapters.mmcv.hooks import LossDynamicsTrackingHook
 from otx.algorithms.common.adapters.mmcv.hooks.recording_forward_hook import (
@@ -29,16 +26,12 @@ from otx.algorithms.common.adapters.mmcv.hooks.recording_forward_hook import (
     FeatureVectorHook,
 )
 from otx.algorithms.common.adapters.mmcv.utils import (
-    adapt_batch_size,
     build_data_parallel,
 )
 from otx.algorithms.common.adapters.mmcv.utils.config_utils import (
     OTXConfig,
 )
-from otx.algorithms.common.adapters.torch.utils import convert_sync_batchnorm
-from otx.algorithms.common.configs.configuration_enums import BatchSizeAdaptType
 from otx.algorithms.common.configs.training_base import TrainType
-from otx.algorithms.common.tasks.nncf_task import NNCFBaseTask
 from otx.algorithms.common.utils.data import get_dataset
 from otx.algorithms.common.utils.logger import get_logger
 from otx.algorithms.detection.adapters.mmdet.configurer import (
@@ -193,7 +186,7 @@ class MMDetectionTask(OTXDetectionTask):
     ):
         """Train function in MMDetectionTask."""
         logger.info("init data cfg.")
-        self._data_cfg = ConfigDict(data=ConfigDict())
+        self._data_cfg = ConfigDict()
 
         for cfg_key, subset in zip(
             ["train", "val", "unlabeled"],
@@ -201,7 +194,7 @@ class MMDetectionTask(OTXDetectionTask):
         ):
             subset = get_dataset(dataset, subset)
             if subset and self._data_cfg is not None:
-                self._data_cfg.data[cfg_key] = ConfigDict(
+                self._data_cfg[cfg_key + "_dataloader"] = ConfigDict(
                     otx_dataset=subset,
                     labels=self._labels,
                 )
@@ -213,65 +206,14 @@ class MMDetectionTask(OTXDetectionTask):
         cfg = self.configure(True, None, get_dataset(dataset, Subset.TRAINING))
         logger.info("train!")
 
-        timestamp = time.strftime("%Y%m%d_%H%M%S", time.localtime())
-
         # Environment
-        logger.info(f"cfg.gpu_ids = {cfg.gpu_ids}, distributed = {cfg.distributed}")
         env_info_dict = collect_env()
         env_info = "\n".join([(f"{k}: {v}") for k, v in env_info_dict.items()])
         dash_line = "-" * 60 + "\n"
         logger.info(f"Environment info:\n{dash_line}{env_info}\n{dash_line}")
 
-        # Data
-        datasets = [build_dataset(cfg.data.train)]
-
-        # Target classes
-        if "task_adapt" in cfg:
-            target_classes = cfg.task_adapt.get("final", [])
-        else:
-            target_classes = datasets[0].CLASSES
-
-        # Metadata
-        meta = dict()
-        meta["env_info"] = env_info
-        # meta['config'] = cfg.pretty_text
-        meta["seed"] = cfg.seed
-        meta["exp_name"] = cfg.work_dir
-        if cfg.checkpoint_config is not None:
-            cfg.checkpoint_config.meta = dict(
-                mmdet_version=__version__ + get_git_hash()[:7],
-                CLASSES=target_classes,
-            )
-
-        # Model
-        model = self.build_model(cfg, fp16=cfg.get("fp16", False))
-        model.train()
-        model.CLASSES = target_classes
-
-        if cfg.distributed:
-            convert_sync_batchnorm(model)
-
-        validate = bool(cfg.data.get("val", None))
-
-        if self._hyperparams.learning_parameters.auto_adapt_batch_size != BatchSizeAdaptType.NONE:
-            train_func = partial(train_detector, meta=deepcopy(meta), model=deepcopy(model), distributed=False)
-            adapt_batch_size(
-                train_func,
-                cfg,
-                datasets,
-                isinstance(self, NNCFBaseTask),  # nncf needs eval hooks
-                not_increase=(self._hyperparams.learning_parameters.auto_adapt_batch_size == BatchSizeAdaptType.SAFE),
-            )
-
-        train_detector(
-            model,
-            datasets,
-            cfg,
-            distributed=cfg.distributed,
-            validate=validate,
-            timestamp=timestamp,
-            meta=meta,
-        )
+        runner = Runner.from_cfg(cfg)
+        runner.train()
 
         # Save outputs
         output_ckpt_path = os.path.join(cfg.work_dir, "latest.pth")
@@ -313,12 +255,12 @@ class MMDetectionTask(OTXDetectionTask):
         logger.info("infer!")
 
         # Data loader
-        mm_dataset = build_dataset(cfg.data.test)
+        mm_dataset = DATASETS.build(cfg.data.test)
         samples_per_gpu = cfg.data.test_dataloader.get("samples_per_gpu", 1)
         # If the batch size and the number of data are not divisible, the metric may score differently.
         # To avoid this, use 1 if they are not divisible.
         samples_per_gpu = samples_per_gpu if len(mm_dataset) % samples_per_gpu == 0 else 1
-        dataloader = build_dataloader(
+        dataloader = Runner.build_dataloader(
             mm_dataset,
             samples_per_gpu=samples_per_gpu,
             workers_per_gpu=cfg.data.test_dataloader.get("workers_per_gpu", 0),
@@ -551,14 +493,11 @@ class MMDetectionTask(OTXDetectionTask):
 
         cfg = self.configure(False, None)
 
-        samples_per_gpu = cfg.data.test_dataloader.get("samples_per_gpu", 1)
-        if samples_per_gpu > 1:
-            # Replace 'ImageToTensor' to 'DefaultFormatBundle'
-            cfg.data.test.pipeline = replace_ImageToTensor(cfg.data.test.pipeline)
+        cfg.data.test_dataloader.get("samples_per_gpu", 1)
 
         # Data loader
-        mm_dataset = build_dataset(cfg.data.test)
-        dataloader = build_dataloader(
+        mm_dataset = DATASETS.build(cfg.data.test)
+        dataloader = Runner.build_dataloader(
             mm_dataset,
             samples_per_gpu=cfg.data.get("samples_per_gpu", 1),
             workers_per_gpu=cfg.data.get("workers_per_gpu", 0),

@@ -43,8 +43,8 @@ class DetectionExporter(Exporter):
     @staticmethod
     def naive_export(output_dir, model_builder, precision, export_type, cfg, model_name="model"):
         """Export using torch.onnx directly."""
+        from mmcv.transforms import Compose
         from mmdet.apis.inference import LoadImage
-        from mmdet.datasets.pipelines import Compose
 
         from otx.algorithms.common.adapters.mmdeploy.apis import NaiveExporter
 

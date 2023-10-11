@@ -8,6 +8,7 @@ from typing import List, Optional
 
 from mmengine.hooks import Hook, ParamSchedulerHook
 from mmengine.logging import print_log
+from mmengine.optim.scheduler import LinearLR
 from mmengine.registry import HOOKS
 from mmengine.runner import Runner
 
@@ -110,44 +111,47 @@ class EarlyStoppingHook(Hook):
 
     def before_run(self, runner: Runner):
         """Called before_run in EarlyStoppingHook."""
+        # This hook should be skipped in test phase.
+        if runner._train_dataloader.dataset.otx_dataset is None:
+            return
         if runner.max_epochs is None:
             self.by_epoch = False
-        for hook in runner.hooks:
-            if isinstance(hook, ParamSchedulerHook):
-                self.warmup_iters = hook.warmup_iters
+        for param_scheduler in runner.param_schedulers:
+            if isinstance(param_scheduler, LinearLR):
+                self.warmup_iters = param_scheduler.end
                 break
         if getattr(self, "warmup_iters", None) is None:
-            raise ValueError("ParamSchedulerHook must be registered to runner.")
+            raise ValueError("LinearLR sceduler must be registered to runner.param_schedulers")
 
-    def after_train_iter(self, runner: Runner):
-        """Called after every training iter to evaluate the results."""
-        if not self.by_epoch:
-            self._do_check_stopping(runner)
-
-    def after_train_epoch(self, runner: Runner):
+    def after_val_epoch(self, runner: Runner, metrics: dict):
         """Called after every training epoch to evaluate the results."""
         if self.by_epoch:
-            self._do_check_stopping(runner)
+            self._do_check_stopping(runner, metrics)
 
-    def _do_check_stopping(self, runner):
+    def _do_check_stopping(self, runner, metrics):
         """Called _do_check_stopping in EarlyStoppingHook."""
         if not self._should_check_stopping(runner) or self.warmup_iters > runner.iter:
             return
 
         if runner.rank == 0:
-            if self.key_indicator not in runner.log_buffer.output:
+            if self.key_indicator not in metrics:
                 raise KeyError(
                     f"metric {self.key_indicator} does not exist in buffer. Please check "
                     f"{self.key_indicator} is cached in evaluation output buffer"
                 )
 
-            key_score = runner.log_buffer.output[self.key_indicator]
+            key_score = metrics[self.key_indicator]
             if self.compare_func(key_score - (key_score * self.min_delta_ratio), self.best_score):
                 self.best_score = key_score
                 self.wait_count = 0
                 self.last_iter = runner.iter
             else:
                 self.wait_count += 1
+                print_log(
+                    f"Best score: {self.best_score}, Current Score: {key_score}, "
+                    f"Patience: {self.patience} Count: {self.wait_count}",
+                    logger=runner.logger,
+                )
                 if self.wait_count >= self.patience:
                     if runner.iter - self.last_iter < self.iteration_patience:
                         print_log(
@@ -163,7 +167,7 @@ class EarlyStoppingHook(Hook):
                         f"\nEarly Stopping at :{stop_point} with " f"best {self.key_indicator}: {self.best_score}",
                         logger=runner.logger,
                     )
-                    runner.should_stop = True
+                    runner.train_loop.stop_training = True
 
     def _should_check_stopping(self, runner):
         """Called _should_check_stopping in EarlyStoppingHook."""
@@ -203,9 +207,9 @@ class LazyEarlyStoppingHook(EarlyStoppingHook):
             if not check_time(runner, self.interval):
                 # No evaluation during the interval.
                 return False
-        elif (current + 1) < self.start:
+        elif (current) < self.start:
             return False
-        elif (current + 1 - self.start) % self.interval:
+        elif (current - self.start) % self.interval:
             return False
         return True
 

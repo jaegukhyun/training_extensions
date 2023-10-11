@@ -21,8 +21,8 @@ def _evaluation_wrapper(self, fn, runner, *args, **kwargs):
     return out
 
 
-NNCF_PATCHER.patch("mmcv.runner.EvalHook.evaluate", _evaluation_wrapper)
-NNCF_PATCHER.patch("otx.algorithms.common.adapters.mmcv.hooks.eval_hook.CustomEvalHook.evaluate", _evaluation_wrapper)
+# NNCF_PATCHER.patch("mmcv.runner.EvalHook.evaluate", _evaluation_wrapper)
+# NNCF_PATCHER.patch("otx.algorithms.common.adapters.mmcv.hooks.eval_hook.CustomEvalHook.evaluate", _evaluation_wrapper)
 
 NNCF_PATCHER.patch(
     "otx.algorithms.common.adapters.mmcv.hooks.recording_forward_hook.FeatureVectorHook.func",

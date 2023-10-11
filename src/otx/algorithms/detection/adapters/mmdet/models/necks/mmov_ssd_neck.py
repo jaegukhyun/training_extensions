@@ -9,7 +9,7 @@ import openvino.runtime as ov
 import torch
 from mmcv.cnn import ConvModule, DepthwiseSeparableConvModule
 from mmdet.registry import MODELS
-from mmengin.module import BaseModule
+from mmengine.model import BaseModule
 from torch import nn
 
 from otx.core.ov.models.mmov_model import MMOVModel

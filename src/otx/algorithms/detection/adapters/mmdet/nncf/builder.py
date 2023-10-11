@@ -36,11 +36,11 @@ def build_nncf_detector(  # pylint: disable=too-many-locals,too-many-statements
 ):
     """A function to build NNCF wrapped mmdet model."""
 
+    from mmcv.transforms import Compose
     from mmdet.apis import multi_gpu_test, single_gpu_test
     from mmdet.apis.inference import LoadImage
     from mmdet.datasets import build_dataloader as mmdet_build_dataloader
     from mmdet.datasets import build_dataset as mmdet_build_dataset
-    from mmdet.datasets.pipelines import Compose
     from nncf.torch.dynamic_graph.io_handling import nncf_model_input
 
     from otx.algorithms.common.adapters.mmcv.nncf.utils import (

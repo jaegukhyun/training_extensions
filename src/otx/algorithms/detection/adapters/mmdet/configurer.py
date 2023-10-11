@@ -98,16 +98,16 @@ class DetectionConfigurer(BaseConfigurer):
 
     def _configure_eval_dataset(self, cfg):
         if cfg.get("task", "detection") == "detection":
-            eval_types = ["val", "test"]
+            eval_types = ["val_dataloader", "test_dataloader"]
             for eval_type in eval_types:
-                if cfg.data[eval_type]["type"] == "TaskAdaptEvalDataset":
-                    cfg.data[eval_type]["model_classes"] = self.model_classes
+                if cfg[eval_type]["dataset"]["type"] == "TaskAdaptEvalDataset":
+                    cfg[eval_type]["dataset"]["model_classes"] = self.model_classes
                 else:
                     # Wrap original dataset config
-                    org_type = cfg.data[eval_type]["type"]
-                    cfg.data[eval_type]["type"] = "TaskAdaptEvalDataset"
-                    cfg.data[eval_type]["org_type"] = org_type
-                    cfg.data[eval_type]["model_classes"] = self.model_classes
+                    org_type = cfg[eval_type]["dataset"]["type"]
+                    cfg[eval_type]["dataset"]["type"] = "TaskAdaptEvalDataset"
+                    cfg[eval_type]["dataset"]["org_type"] = org_type
+                    cfg[eval_type]["dataset"]["model_classes"] = self.model_classes
 
     def configure_task_data_pipeline(self, cfg):
         """Trying to alter class indices of training data according to model class order."""
@@ -165,10 +165,10 @@ class DetectionConfigurer(BaseConfigurer):
         if model_cfg is not None:
             if cfg.model.type == "CustomYOLOX" and cfg.model.backbone.widen_factor == 0.375:  # YOLOX tiny case
                 base_input_size = {
-                    "train": (640, 640),
-                    "val": (416, 416),
-                    "test": (416, 416),
-                    "unlabeled": (992, 736),
+                    "train_dataloader": (640, 640),
+                    "val_dataloader": (416, 416),
+                    "test_dataloader": (416, 416),
+                    "unlabeled_dataloader": (992, 736),
                 }
         manager = InputSizeManager(cfg, base_input_size)
 

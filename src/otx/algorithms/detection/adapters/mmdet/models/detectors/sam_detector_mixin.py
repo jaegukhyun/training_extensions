@@ -7,9 +7,9 @@
 class SAMDetectorMixin:
     """SAM-enabled BaseDetector mix-in."""
 
-    def train_step(self, data, optimizer, **kwargs):
+    def train_step(self, data, optim_wrapper, **kwargs):
         """Saving current batch data to compute SAM gradient."""
         # Rest of SAM logics are implented in SAMOptimizerHook
         self.current_batch = data
 
-        return super().train_step(data, optimizer, **kwargs)
+        return super().train_step(data, optim_wrapper, **kwargs)

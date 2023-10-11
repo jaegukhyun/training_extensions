@@ -93,7 +93,6 @@ class BaseConfigurer:
         self.configure_hooks(
             cfg,
         )
-        self.configure_compat_cfg(cfg)
         return cfg
 
     def merge_configs(self, cfg, data_cfg, data_pipeline_path, hyperparams_from_otx, **kwargs):
@@ -109,8 +108,8 @@ class BaseConfigurer:
         self.override_from_hyperparams(cfg, hyperparams_from_otx, **kwargs)
 
         if data_cfg:
-            for subset in data_cfg.data:
-                if subset in cfg.data:
+            for subset in data_cfg:
+                if subset in cfg:
                     src_data_cfg = self.get_subset_data_cfg(cfg, subset)
                     new_data_cfg = self.get_subset_data_cfg(data_cfg, subset)
                     for key in new_data_cfg:
@@ -162,6 +161,7 @@ class BaseConfigurer:
 
     def configure_device(self, cfg):
         """Setting device for training and inference."""
+        # FIXME gpu_ids and device seem deprecated. Fix this function for proper device setting
         cfg.distributed = False
         if torch.distributed.is_initialized():
             cfg.gpu_ids = [int(os.environ["LOCAL_RANK"])]
@@ -181,27 +181,27 @@ class BaseConfigurer:
     @staticmethod
     def configure_distributed(cfg: Config) -> None:
         """Patching for distributed training."""
-        if hasattr(cfg, "dist_params") and cfg.dist_params.get("linear_scale_lr", False):
-            new_lr = dist.get_world_size() * cfg.optimizer.lr
+        if hasattr(cfg.env_cfg, "dist_cfg") and cfg.env_cfg.dist_cfg.get("linear_scale_lr", False):
+            new_lr = dist.get_world_size() * cfg.optim_wrapper.optimizer.lr
             logger.info(
                 f"enabled linear scaling rule to the learning rate. \
-                changed LR from {cfg.optimizer.lr} to {new_lr}"
+                changed LR from {cfg.optim_wrapper.optimizer.lr} to {new_lr}"
             )
-            cfg.optimizer.lr = new_lr
+            cfg.optim_wrapper.optimizer.lr = new_lr
 
     def configure_samples_per_gpu(
         self,
         cfg: Config,
-        subsets: List[str] = ["train", "val", "test", "unlabeled"],
+        subsets: List[str] = ["train_dataloader", "val_dataloader", "test_dataloader", "unlabeled_dataloader"],
     ):
         """Settings samples_per_gpu for each dataloader.
 
         samples_per_gpu can be changed if it is larger than length of datset
         """
         for subset in subsets:
-            if cfg.data.get(subset, None):
-                dataloader_cfg = cfg.data.get(f"{subset}_dataloader", ConfigDict())
-                samples_per_gpu = dataloader_cfg.get("samples_per_gpu", cfg.data.get("samples_per_gpu", 1))
+            if cfg.get(subset, None):
+                dataloader_cfg = cfg.get(subset, ConfigDict())
+                batch_size = dataloader_cfg.get("batch_size", 1)
 
                 data_cfg = self.get_subset_data_cfg(cfg, subset)
                 if data_cfg.get("otx_dataset") is not None:
@@ -212,16 +212,16 @@ class BaseConfigurer:
 
                     # set batch size as a total dataset
                     # if it is smaller than total dataset
-                    if dataset_len < samples_per_gpu:
-                        dataloader_cfg.samples_per_gpu = dataset_len
-                        logger.info(f"{subset}'s samples_per_gpu: {samples_per_gpu} --> {dataset_len}")
+                    if dataset_len < batch_size:
+                        dataloader_cfg.batch_size = dataset_len
+                        logger.info(f"{subset}'s batch_size: {batch_size} --> {dataset_len}")
 
                     # drop the last batch if the last batch size is 1
                     # batch size of 1 is a runtime error for training batch normalization layer
-                    if subset in ("train", "unlabeled") and dataset_len % samples_per_gpu == 1:
+                    if subset in ("train_dataloader", "unlabeled_dataloader") and dataset_len % batch_size == 1:
                         dataloader_cfg["drop_last"] = True
 
-                    cfg.data[f"{subset}_dataloader"] = dataloader_cfg
+                    cfg.subset = dataloader_cfg
 
     def configure_data_pipeline(self, cfg, input_size, model_ckpt_path, **kwargs):
         """Configuration data pipeline settings."""
@@ -244,21 +244,18 @@ class BaseConfigurer:
 
         if fp16_config is not None:
             if torch.cuda.is_available():
-                optim_type = cfg.optimizer_config.get("type", "OptimizerHook")
+                optim_type = cfg.optim_wrapper.get("type", "OptimWrapper")
                 opts: Dict[str, Any] = dict(
-                    distributed=getattr(cfg, "distributed", False),
                     **fp16_config,
                 )
-                if optim_type == "SAMOptimizerHook":
-                    opts["type"] = "Fp16SAMOptimizerHook"
-                elif optim_type == "OptimizerHook":
-                    opts["type"] = "Fp16OptimizerHook"
+                if optim_type == "OptimWrapper":
+                    opts["type"] = "AmpOptimWrapper"
                 else:
                     # does not support optimizerhook type
                     # let mm library handle it
                     cfg.fp16 = fp16_config
                     opts = dict()
-                cfg.optimizer_config.update(opts)
+                cfg.optim_wrapper.update(opts)
             else:
                 logger.info("Revert FP16 to FP32 on CPU device")
 
@@ -268,7 +265,7 @@ class BaseConfigurer:
         self.model_classes = model_classes
         self.data_classes = data_classes
         if data_classes is not None:
-            train_data_cfg = self.get_subset_data_cfg(cfg, "train")
+            train_data_cfg = self.get_subset_data_cfg(cfg, "train_dataloader")
             train_data_cfg["data_classes"] = data_classes
             new_classes = np.setdiff1d(data_classes, model_classes).tolist()
             train_data_cfg["new_classes"] = new_classes
@@ -346,38 +343,6 @@ class BaseConfigurer:
     def _configure_head(self, cfg):
         raise NotImplementedError
 
-    @staticmethod
-    def configure_compat_cfg(cfg: Config):
-        """Modify config to keep the compatibility."""
-
-        global_dataloader_cfg: Dict[str, str] = {}
-        global_dataloader_cfg.update(
-            {
-                k: cfg.data.pop(k)
-                for k in list(cfg.data.keys())
-                if k
-                not in [
-                    "train",
-                    "val",
-                    "test",
-                    "unlabeled",
-                    "train_dataloader",
-                    "val_dataloader",
-                    "test_dataloader",
-                    "unlabeled_dataloader",
-                ]
-            }
-        )
-
-        for subset in ["train", "val", "test", "unlabeled"]:
-            if subset not in cfg.data:
-                continue
-            dataloader_cfg = cfg.data.get(f"{subset}_dataloader", None)
-            if dataloader_cfg is None:
-                raise AttributeError(f"{subset}_dataloader is not found in config.")
-            dataloader_cfg = Config(cfg_dict={**global_dataloader_cfg, **dataloader_cfg})
-            cfg.data[f"{subset}_dataloader"] = dataloader_cfg
-
     def configure_hooks(
         self,
         cfg,
@@ -408,7 +373,14 @@ class BaseConfigurer:
                     priority=71,
                 ),
             )
-        cfg.log_config.hooks.append({"type": "OTXLoggerHook", "curves": self.learning_curves})
+        # cfg.log_config.hooks.append({"type": "OTXLoggerHook", "curves": self.learning_curves})
+        # update_or_add_custom_hook(
+        #     cfg,
+        #     ConfigDict(
+        #         type="OTXLoggerHook",
+        #         curves=self.learning_curves,
+        #     )
+        # )
         if hasattr(cfg, "algo_backend"):
             self._update_caching_modules(cfg)
 
@@ -430,7 +402,7 @@ class BaseConfigurer:
         def _find_max_num_workers(cfg: dict):
             num_workers = [0]
             for key, value in cfg.items():
-                if key == "workers_per_gpu" and isinstance(value, int):
+                if key == "num_workers" and isinstance(value, int):
                     num_workers += [value]
                 elif isinstance(value, dict):
                     num_workers += [_find_max_num_workers(value)]
@@ -443,7 +415,7 @@ class BaseConfigurer:
 
             return cfg.algo_backend.mem_cache_size
 
-        max_num_workers = _find_max_num_workers(cfg.data)
+        max_num_workers = _find_max_num_workers(cfg)
         mem_cache_size = _get_mem_cache_size(cfg)
 
         mode = "multiprocessing" if max_num_workers > 0 else "singleprocessing"
@@ -490,7 +462,7 @@ class BaseConfigurer:
     def get_data_classes(self, cfg):
         """Get data classes from train cfg."""
         data_classes = []
-        train_cfg = self.get_subset_data_cfg(cfg, "train")
+        train_cfg = self.get_subset_data_cfg(cfg, "train_dataloader")
         if "data_classes" in train_cfg:
             data_classes = list(train_cfg.pop("data_classes", []))
         elif "classes" in train_cfg:
@@ -500,13 +472,18 @@ class BaseConfigurer:
     @staticmethod
     def get_subset_data_cfg(cfg, subset):
         """Get subset's data cfg."""
-        assert subset in ["train", "val", "test", "unlabeled"], f"Unknown subset:{subset}"
-        if "dataset" in cfg.data[subset]:  # Concat|RepeatDataset
-            dataset = cfg.data[subset].dataset
+        assert subset in [
+            "train_dataloader",
+            "val_dataloader",
+            "test_dataloader",
+            "unlabeled_dataloader",
+        ], f"Unknown subset:{subset}"
+        if "dataset" in cfg[subset]:  # Concat|RepeatDataset
+            dataset = cfg[subset].dataset
             while hasattr(dataset, "dataset"):
                 dataset = dataset.dataset
             return dataset
-        return cfg.data[subset]
+        return cfg[subset]
 
     @staticmethod
     def adapt_input_size_to_dataset(
@@ -524,7 +501,7 @@ class BaseConfigurer:
             Tuple[int, int]: (width, height) or None
         """
 
-        data_cfg = BaseConfigurer.get_subset_data_cfg(cfg, "train")
+        data_cfg = BaseConfigurer.get_subset_data_cfg(cfg, "train_dataloader")
         dataset = data_cfg.get("otx_dataset", None)
         if dataset is None:
             return None

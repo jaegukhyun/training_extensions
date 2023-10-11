@@ -5,8 +5,9 @@
 import copy
 from typing import Any, Dict, Optional
 
-from mmdet.datasets.builder import PIPELINES, build_from_cfg
-from mmdet.datasets.pipelines import Resize
+import numpy as np
+from mmdet.datasets.transforms import Resize
+from mmdet.registry import TRANSFORMS
 
 import otx.algorithms.common.adapters.mmcv.pipelines.load_image_from_otx_dataset as load_image_base
 from otx.algorithms.detection.adapters.mmdet.datasets.dataset import (
@@ -16,12 +17,12 @@ from otx.api.entities.label import Domain
 
 
 # pylint: disable=too-many-instance-attributes, too-many-arguments
-@PIPELINES.register_module()
+@TRANSFORMS.register_module()
 class LoadImageFromOTXDataset(load_image_base.LoadImageFromOTXDataset):
     """Pipeline element that loads an image from a OTX Dataset on the fly."""
 
 
-@PIPELINES.register_module()
+@TRANSFORMS.register_module()
 class LoadResizeDataFromOTXDataset(load_image_base.LoadResizeDataFromOTXDataset):
     """Load and resize image & annotation with cache support."""
 
@@ -29,16 +30,16 @@ class LoadResizeDataFromOTXDataset(load_image_base.LoadResizeDataFromOTXDataset)
         """Creates resize operation."""
         if cfg is None:
             return None
-        return build_from_cfg(cfg, PIPELINES)
+        return TRANSFORMS.build(cfg)
 
     def _create_resize_op(self, cfg: Optional[Dict]) -> Optional[Any]:
         """Creates resize operation."""
         if cfg is None:
             return None
-        return build_from_cfg(cfg, PIPELINES)
+        return TRANSFORMS.build(cfg)
 
 
-@PIPELINES.register_module()
+@TRANSFORMS.register_module()
 class ResizeTo(Resize):
     """Resize to specific size.
 
@@ -65,7 +66,7 @@ class ResizeTo(Resize):
         return super().__call__(results)
 
 
-@PIPELINES.register_module()
+@TRANSFORMS.register_module()
 class LoadAnnotationFromOTXDataset:
     """Pipeline element that loads an annotation from a OTX Dataset on the fly.
 
@@ -104,11 +105,12 @@ class LoadAnnotationFromOTXDataset:
         results["bbox_fields"].append("gt_bboxes")
         results["gt_bboxes"] = copy.deepcopy(ann_info["bboxes"])
         results["gt_ann_ids"] = copy.deepcopy(ann_info["ann_ids"])
+        results["gt_ignore_flags"] = np.array([False] * len(results["gt_bboxes"]))
         return results
 
     @staticmethod
     def _load_labels(results, ann_info):
-        results["gt_labels"] = copy.deepcopy(ann_info["labels"])
+        results["gt_bboxes_labels"] = copy.deepcopy(ann_info["labels"])
         return results
 
     @staticmethod

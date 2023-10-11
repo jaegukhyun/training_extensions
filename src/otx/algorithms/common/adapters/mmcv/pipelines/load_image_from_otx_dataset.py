@@ -129,7 +129,7 @@ class LoadResizeDataFromOTXDataset(LoadImageFromOTXDataset):
         self._downscale_only = resize_cfg.pop("downscale_only", False) if resize_cfg else False
         self._resize_op = self._create_resize_op(resize_cfg)
         if self._resize_op is not None:
-            self._resize_shape = resize_cfg.get("size", resize_cfg.get("img_scale"))
+            self._resize_shape = resize_cfg.get("size", resize_cfg.get("scale"))
             if isinstance(self._resize_shape, int):
                 self._resize_shape = (self._resize_shape, self._resize_shape)
             assert isinstance(self._resize_shape, tuple), f"Random scale is not supported by {self.__class__.__name__}"

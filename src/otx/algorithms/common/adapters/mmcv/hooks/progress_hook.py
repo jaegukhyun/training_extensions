@@ -38,6 +38,9 @@ class OTXProgressHook(Hook):
 
     def before_run(self, runner: Runner):
         """Called before_run in OTXProgressHook."""
+        # This hook should be skipeed in test phase.
+        if runner._train_dataloader.dataset.otx_dataset is None:
+            return
         total_epochs = runner.max_epochs if runner.max_epochs is not None else 1
         self.time_monitor.total_epochs = total_epochs
         self.time_monitor.train_steps = runner.max_iters // total_epochs if total_epochs else 1
@@ -72,16 +75,18 @@ class OTXProgressHook(Hook):
                 logger.info(f"training progress {progress:.0f}%")
                 self.print_threshold = (progress + 10) // 10 * 10
 
-    def before_val_iter(self, runner: Runner):
+    def before_val_iter(self, runner: Runner, batch_idx, data_batch):
         """Called before_val_iter in OTXProgressHook."""
         self.time_monitor.on_test_batch_begin(1, logger)
 
-    def after_val_iter(self, runner: Runner):
+    def after_val_iter(self, runner: Runner, batch_idx, data_batch, outputs):
         """Called after_val_iter in OTXProgressHook."""
         self.time_monitor.on_test_batch_end(1, logger)
 
     def after_run(self, runner: Runner):
         """Called after_run in OTXProgressHook."""
+        if runner._train_dataloader.dataset.otx_dataset is None:
+            return
         self.time_monitor.on_train_end(1)
         if self.time_monitor.update_progress_callback:
             self.time_monitor.update_progress_callback(int(self.time_monitor.get_progress()))

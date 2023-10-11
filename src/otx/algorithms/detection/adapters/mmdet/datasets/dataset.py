@@ -15,13 +15,12 @@
 # and limitations under the License.
 
 from collections import OrderedDict
-from copy import copy
-from typing import Any, Dict, List, Sequence, Tuple, Union
+from typing import Dict, List, Sequence, Tuple, Union
 
 import numpy as np
-from mmdet.datasets.builder import DATASETS, build_dataset
-from mmdet.datasets.custom import CustomDataset
-from mmdet.datasets.pipelines import Compose
+from mmcv.transforms import Compose
+from mmdet.datasets import BaseDetDataset
+from mmdet.registry import DATASETS
 from mmdet.structures.mask.structures import PolygonMasks
 from mmengine.config import Config
 from mmengine.logging import print_log
@@ -101,23 +100,23 @@ def get_annotation_mmdet_format(
 
 
 @DATASETS.register_module()
-class OTXDetDataset(CustomDataset):
+class OTXDetDataset(BaseDetDataset):
     """Wrapper that allows using a OTX dataset to train mmdetection models.
 
     This wrapper is not based on the filesystem,
     but instead loads the items here directly from the OTX DatasetEntity object.
 
-    The wrapper overwrites some methods of the CustomDataset class: prepare_train_img, prepare_test_img and prepipeline
-    Naming of certain attributes might seem a bit peculiar but this is due to the conventions set in CustomDataset. For
+    The wrapper overwrites some methods of the BaseDetDataset class: prepare_train_img, prepare_test_img and prepipeline
+    Naming of certain attributes might seem a bit peculiar but this is due to the conventions set in BaseDetDataset. For
     instance, CustomDatasets expects the dataset items to be stored in the attribute data_infos, which is why it is
     named like that and not dataset_items.
 
     """
 
     class _DataInfoProxy:
-        """This class is intended to be a wrapper to use it in CustomDataset-derived class as `self.data_infos`.
+        """This class is intended to be a wrapper to use it in BaseDetDataset-derived class as `self.data_infos`.
 
-        Instead of using list `data_infos` as in CustomDataset, our implementation of dataset OTXDataset
+        Instead of using list `data_infos` as in BaseDetDataset, our implementation of dataset OTXDataset
         uses this proxy class with overriden __len__ and __getitem__; this proxy class
         forwards data access operations to otx_dataset and converts the dataset items to the view
         convenient for mmdetection.
@@ -151,6 +150,9 @@ class OTXDetDataset(CustomDataset):
                 index=index,
                 ann_info=dict(label_list=self.labels),
                 ignored_labels=ignored_labels,
+                bbox_fields=[],
+                mask_fields=[],
+                seg_fields=[],
             )
 
             return data_info
@@ -161,6 +163,7 @@ class OTXDetDataset(CustomDataset):
         labels: List[LabelEntity],
         pipeline: Sequence[dict],
         test_mode: bool = False,
+        max_refetch: int = 1000,
         **kwargs,
     ):
         dataset_cfg = kwargs.copy()
@@ -171,8 +174,11 @@ class OTXDetDataset(CustomDataset):
         self.CLASSES = list(label.name for label in labels)
         self.domain = self.labels[0].domain
         self.test_mode = test_mode
+        self.max_refetch = max_refetch
 
-        # Instead of using list data_infos as in CustomDataset, this implementation of dataset
+        self._metainfo = {"classes": self.CLASSES}
+
+        # Instead of using list data_infos as in BaseDetDataset, this implementation of dataset
         # uses a proxy class with overriden __len__ and __getitem__; this proxy class
         # forwards data access operations to otx_dataset.
         # Note that list `data_infos` cannot be used here, since OTX dataset class does not have interface to
@@ -180,63 +186,39 @@ class OTXDetDataset(CustomDataset):
         # even if we need only checking aspect ratio of the image; due to it
         # this implementation of dataset does not uses such tricks as skipping images with wrong aspect ratios or
         # small image size, since otherwise reading the whole dataset during initialization will be required.
-        self.data_infos = OTXDetDataset._DataInfoProxy(otx_dataset, labels)
+        self.data_list = OTXDetDataset._DataInfoProxy(otx_dataset, labels)
 
         self.proposals = None  # Attribute expected by mmdet but not used for OTX datasets
 
         if not test_mode:
-            self._set_group_flag()
             self.img_indices = get_old_new_img_indices(self.labels, new_classes, self.otx_dataset)
 
         self.pipeline = Compose(pipeline)
         annotation = [self.get_ann_info(i) for i in range(len(self))]
         self.evaluator = Evaluator(annotation, self.domain, self.CLASSES)
+        self.serialize_data = None  # OTX has own data caching mechanism
+        self._fully_initialized = False
+        self.full_init()
 
-    def _set_group_flag(self):
-        """Set flag for grouping images.
+    def full_init(self):
+        """OTXDetDataset do not have difference between full init and lazy init.
 
-        Originally, in Custom dataset, images with aspect ratio greater than 1 will be set as group 1,
-        otherwise group 0.
-        This implementation will set group 0 for every image.
+        It is for compatibility with MMEngine
         """
-        self.flag = np.zeros(len(self), dtype=np.uint8)
+        if self._fully_initialized:
+            return
 
-    def _rand_another(self, idx):
-        _ = idx
-        return np.random.choice(len(self))
+        self._fully_initialized = True
 
-    def prepare_train_img(self, idx: int) -> dict:
-        """Get training data and annotations after pipeline.
-
-        :param idx: int, Index of data.
-        :return dict: Training data and annotation after pipeline with new keys introduced by pipeline.
-        """
-        item = copy(self.data_infos[idx])  # Copying dict(), not contents
-        self.pre_pipeline(item)
-        return self.pipeline(item)
-
-    def prepare_test_img(self, idx: int) -> dict:
-        """Get testing data after pipeline.
-
-        :param idx: int, Index of data.
-        :return dict: Testing data after pipeline with new keys introduced by pipeline.
-        """
-        item = copy(self.data_infos[idx])  # Copying dict(), not contents
-        self.pre_pipeline(item)
-        return self.pipeline(item)
-
-    @staticmethod
-    def pre_pipeline(results: Dict[str, Any]):
-        """Prepare results dict for pipeline. Add expected keys to the dict."""
-        results["bbox_fields"] = []
-        results["mask_fields"] = []
-        results["seg_fields"] = []
+    def __len__(self) -> int:
+        """Return length of dataset."""
+        return len(self.data_list)
 
     def get_ann_info(self, idx: int):
         """This method is used for evaluation of predictions.
 
-        The CustomDataset class implements a method
-        CustomDataset.evaluate, which uses the class method get_ann_info to retrieve annotations.
+        The BaseDetDataset class implements a method
+        BaseDetDataset.evaluate, which uses the class method get_ann_info to retrieve annotations.
 
         :param idx: index of the dataset item for which to get the annotations
         :return ann_info: dict that contains the coordinates of the bboxes and their corresponding labels
@@ -329,7 +311,7 @@ class ImageTilingDataset(OTXDetDataset):
         sampling_ratio=1.0,
         include_full_img=False,
     ):
-        self.dataset = build_dataset(dataset)
+        self.dataset = DATASETS.build(dataset)
         self.CLASSES = self.dataset.CLASSES
         data_subset = self.dataset.otx_dataset[0].subset
         self.tile_dataset = Tile(

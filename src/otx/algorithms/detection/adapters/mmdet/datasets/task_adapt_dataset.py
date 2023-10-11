@@ -5,7 +5,7 @@
 
 # import torch
 import numpy as np
-from mmdet.datasets import DATASETS, PIPELINES, build_dataset
+from mmdet.registry import DATASETS, TRANSFORMS
 
 from otx.algorithms.common.utils.task_adapt import (
     map_cat_and_cls_as_order,
@@ -30,7 +30,7 @@ class TaskAdaptEvalDataset:
         dataset_cfg = kwargs.copy()
         org_type = dataset_cfg.pop("org_type")
         dataset_cfg["type"] = org_type
-        self.dataset = build_dataset(dataset_cfg)
+        self.dataset = DATASETS.build(dataset_cfg)
         self.model_classes = model_classes
         self.CLASSES = self.dataset.CLASSES
         self.data2model = map_class_names(self.CLASSES, self.model_classes)
@@ -38,6 +38,8 @@ class TaskAdaptEvalDataset:
             self.dataset.cat2label, self.dataset.cat_ids = map_cat_and_cls_as_order(
                 self.CLASSES, self.dataset.coco.cats
             )
+
+        self.metainfo = {"classes": self.CLASSES}
 
     def __getitem__(self, idx):
         """Get item from TaskAdaptEvalDataset."""
@@ -64,7 +66,7 @@ class TaskAdaptEvalDataset:
         return self.dataset.evaluate(adapt_results, **kwargs)
 
 
-@PIPELINES.register_module()
+@TRANSFORMS.register_module()
 class AdaptClassLabels:
     """Data processor for task-adative annotation loading."""
 
@@ -77,9 +79,9 @@ class AdaptClassLabels:
 
     def __call__(self, data):
         """Call function of AdaptClassLabels."""
-        src_labels = data["gt_labels"]
+        src_labels = data["gt_bboxes_labels"]
         dst_labels = []
         for src_label in src_labels:
             dst_labels.append(self.src2dst[src_label])
-        data["gt_labels"] = np.array(dst_labels)
+        data["gt_bboxes_labels"] = np.array(dst_labels)
         return data

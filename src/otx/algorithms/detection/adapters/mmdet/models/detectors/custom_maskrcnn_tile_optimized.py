@@ -6,9 +6,9 @@
 
 import numpy as np
 import torch
-from mmcls.models.necks.gap import GlobalAveragePooling
 from mmcv.cnn import ConvModule
 from mmdet.registry import MODELS
+from mmpretrain.models.necks.gap import GlobalAveragePooling
 from torch import nn
 
 from otx.algorithms.common.adapters.mmdeploy import is_mmdeploy_enabled

@@ -44,7 +44,7 @@ class Tile:
     """Tile and merge datasets.
 
     Args:
-        dataset (CustomDataset): the dataset to be tiled.
+        dataset (BaseDetDataset): the dataset to be tiled.
         tile_size (int): the length of side of each tile. Defaults to 400
         overlap (float, optional): ratio of each tile to overlap with each of
             the tiles in its 4-neighborhood. Defaults to 0.2.

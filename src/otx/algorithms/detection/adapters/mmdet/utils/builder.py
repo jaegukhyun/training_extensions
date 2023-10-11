@@ -8,7 +8,7 @@ from typing import Optional, Union
 
 import torch
 from mmengine.config import Config, ConfigDict
-from mmengine.loggin import MMLogger
+from mmengine.logging import MMLogger
 from mmengine.runner.checkpoint import load_checkpoint
 
 from otx.algorithms.common.utils.logger import LEVEL

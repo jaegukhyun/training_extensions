@@ -29,7 +29,6 @@ from otx.algorithms.common.utils.logger import get_logger
 from otx.api.entities.datasets import DatasetEntity
 
 from ._config_utils_get_configs_by_keys import get_configs_by_keys
-from ._config_utils_get_configs_by_pairs import get_configs_by_pairs
 
 logger = get_logger()
 
@@ -412,13 +411,12 @@ def config_from_string(config_string: str) -> Config:
 
 def patch_color_conversion(config: Config):
     """Patch color conversion."""
-    assert "data" in config
+    assert "model" in config
 
-    for cfg in get_configs_by_pairs(config.data, dict(type="Normalize")):
-        to_rgb = False
-        if "to_rgb" in cfg:
-            to_rgb = cfg.to_rgb
-        cfg.to_rgb = not bool(to_rgb)
+    bgr_to_rgb = False
+    if "bgr_to_rgb" in config.model.data_preprocessor:
+        bgr_to_rgb = config.model.data_preprocessor.bgr_to_rgb
+    config.model.data_preprocessor.bgr_to_rgb = not bool(bgr_to_rgb)
 
 
 def patch_adaptive_interval_training(config: Config):
@@ -482,17 +480,13 @@ def patch_persistent_workers(config: Config):
             it makes workers for data loaders unstable, which makes errors during training.
 
     """
-    dist_semi_sl = "unlabeled" in config.data and torch.distributed.is_initialized()
-    data_cfg = config.data
-    for subset in ["train", "val", "test", "unlabeled"]:
-        if subset not in data_cfg:
+    dist_semi_sl = "unlabeled_dataloader" in config and torch.distributed.is_initialized()
+    for subset in ["train_dataloader", "val_dataloader", "test_dataloader", "unlabeled_dataloader"]:
+        if subset not in config:
             continue
-        dataloader_cfg = data_cfg.get(f"{subset}_dataloader", ConfigDict())
-        workers_per_gpu = dataloader_cfg.get(
-            "workers_per_gpu",
-            data_cfg.get("workers_per_gpu", 0),
-        )
-        if workers_per_gpu == 0 or dist_semi_sl:
+        dataloader_cfg = config.get(subset, ConfigDict())
+        num_workers = dataloader_cfg.get("num_workers", 0)
+        if num_workers == 0 or dist_semi_sl:
             dataloader_cfg["persistent_workers"] = False
         elif "persistent_workers" not in dataloader_cfg:
             dataloader_cfg["persistent_workers"] = True
@@ -500,7 +494,7 @@ def patch_persistent_workers(config: Config):
         if "pin_memory" not in dataloader_cfg:
             dataloader_cfg["pin_memory"] = True
 
-        data_cfg[f"{subset}_dataloader"] = dataloader_cfg
+        config[f"{subset}_dataloader"] = dataloader_cfg
 
 
 def get_adaptive_num_workers(num_dataloader: int = 1) -> Union[int, None]:
@@ -516,13 +510,30 @@ def patch_from_hyperparams(config: Config, hyperparams, **kwargs):
     """Patch config parameters from hyperparams."""
     params = hyperparams.learning_parameters
     algo_backend = hyperparams.algo_backend
-    warmup_iters = int(params.learning_rate_warmup_iters)
+    int(params.learning_rate_warmup_iters)
 
-    lr_config = (
-        ConfigDict(warmup_iters=warmup_iters)
-        if warmup_iters > 0
-        else ConfigDict(warmup_iters=warmup_iters, warmup=None)
-    )
+    #########################################################################################
+    # Setting parameters for learning rate scheduling
+    # This is temporary solution with fixed schedule
+    # This should be changed when ReducedLROnPlateau Params Scheduler is implemented
+    #########################################################################################
+
+    #### Original Codes
+    # model_label_type = config.filename.split("/")[-1]
+    # if "multilabel" in model_label_type:
+    #     lr_config = ConfigDict(max_lr=params.learning_rate, warmup=None)
+    # else:
+    #     lr_config = (
+    #         ConfigDict(warmup_iters=warmup_iters)
+    #         if warmup_iters > 0
+    #         else ConfigDict(warmup_iters=warmup_iters, warmup=None)
+    #     )
+
+    #### Temporary solution with fixed schedule
+
+    #########################################################################################
+    # Setting early stop related params
+    #########################################################################################
 
     if params.enable_early_stopping and config.get("evaluation", None):
         early_stop = ConfigDict(
@@ -533,51 +544,62 @@ def patch_from_hyperparams(config: Config, hyperparams, **kwargs):
     else:
         early_stop = False
 
-    runner = ConfigDict(max_epochs=int(params.num_iters))
-    if config.get("runner", None) and config.runner.get("type").startswith("IterBasedRunner"):
-        runner = ConfigDict(max_iters=int(params.num_iters))
+    #########################################################################################
+    # Setting max epochs or max iters
+    #########################################################################################
+    train_cfg = ConfigDict(max_epochs=int(params.num_iters))
+    if config.get("train_cfg", None) and config.train_cfg.get("type").startswith("IterBased"):
+        train_cfg = ConfigDict(max_iters=int(params.num_iters))
 
-    hparams = ConfigDict(
-        optimizer=ConfigDict(lr=params.learning_rate),
-        lr_config=lr_config,
-        early_stop=early_stop,
-        data=ConfigDict(
-            samples_per_gpu=int(params.batch_size),
-            workers_per_gpu=int(params.num_workers),
-        ),
-        runner=runner,
-        algo_backend=algo_backend,
-    )
+    #########################################################################################
+    # Setting auto num workers
+    #########################################################################################
 
-    # NOTE: Not all algorithms are compatible with the parameter `inference_batch_size`,
-    # as `samples_per_gpu might` not be a valid argument for certain algorithms.
-    if hasattr(config, "task"):
-        if config.task == "instance-segmentation" or config.task == "detection":
-            hparams.update(
-                ConfigDict(
-                    data=ConfigDict(
-                        val_dataloader=ConfigDict(samples_per_gpu=int(params.inference_batch_size)),
-                        test_dataloader=ConfigDict(samples_per_gpu=int(params.inference_batch_size)),
-                    ),
-                )
-            )
     is_semi_sl = algo_backend.train_type.name == "Semisupervised"
 
     if hyperparams.learning_parameters.auto_num_workers:
         adapted_num_worker = get_adaptive_num_workers(2 if is_semi_sl else 1)
         if adapted_num_worker is not None:
-            hparams.data.workers_per_gpu = adapted_num_worker
+            params.num_workers = adapted_num_worker
 
-    if is_semi_sl:
-        unlabeled_config = ConfigDict(
-            data=ConfigDict(
-                unlabeled_dataloader=ConfigDict(
-                    samples_per_gpu=int(params.unlabeled_batch_size),
-                    workers_per_gpu=int(params.num_workers),
+    #########################################################################################
+    # Setting Initial hparams from otx cli
+    #########################################################################################
+    hparams = ConfigDict(
+        optim_wrapper=ConfigDict(optimizer=ConfigDict(lr=params.learning_rate)),
+        early_stop=early_stop,
+        train_dataloader=ConfigDict(
+            batch_size=int(params.batch_size),
+            num_workers=int(params.num_workers),
+        ),
+        val_dataloader=ConfigDict(
+            batch_size=int(params.batch_size),
+            num_workers=int(params.num_workers),
+        ),
+        test_dataloader=ConfigDict(
+            batch_size=int(params.batch_size),
+            num_workers=int(params.num_workers),
+        ),
+        train_cfg=train_cfg,
+        algo_backend=algo_backend,
+    )
+
+    # NOTE: Not all algorithms are compatible with the parameter `inference_batch_size`,
+    # as `batch_size might` not be a valid argument for certain algorithms.
+    if hasattr(config, "task"):
+        if config.task == "instance-segmentation" or config.task == "detection":
+            hparams.update(
+                ConfigDict(
+                    val_dataloader=ConfigDict(batch_size=int(params.inference_batch_size)),
+                    test_dataloader=ConfigDict(batch_size=int(params.inference_batch_size)),
                 )
             )
+
+    if is_semi_sl:
+        hparams.unlabeled_dataloader = ConfigDict(
+            batch_size=int(params.unlabeled_batch_size),
+            num_workers=int(params.num_workers),
         )
-        config.update(unlabeled_config)
 
     hparams["use_adaptive_interval"] = hyperparams.learning_parameters.use_adaptive_interval
     config.merge_from_dict(hparams)
@@ -613,7 +635,7 @@ class InputSizeManager:
     """
 
     PIPELINE_TO_CHANGE: Dict[str, List[str]] = {
-        "resize": ["size", "img_scale"],
+        "resize": ["size", "scale", "scales"],
         "pad": ["size"],
         "crop": ["crop_size"],
         "mosaic": ["img_scale"],
@@ -626,7 +648,12 @@ class InputSizeManager:
         "TwoCropTransform": ["view0", "view1", "pipeline"],
         "LoadResizeDataFromOTXDataset": ["resize_cfg"],
     }
-    SUBSET_TYPES: Tuple[str, str, str, str] = ("train", "val", "test", "unlabeled")
+    SUBSET_TYPES: Tuple[str, str, str, str] = (
+        "train_dataloader",
+        "val_dataloader",
+        "test_dataloader",
+        "unlabeled_dataloader",
+    )
 
     MIN_RECOGNIZABLE_OBJECT_SIZE = 32  # Minimum object size recognizable by NNs: typically 16 ~ 32
     # meaning NxN input pixels being downscaled to 1x1 on feature map
@@ -638,7 +665,6 @@ class InputSizeManager:
         base_input_size: Optional[Union[int, Tuple[int, int], Dict[str, int], Dict[str, Tuple[int, int]]]] = None,
     ):
         self._config = config
-        self._data_config = config.get("data", {})
         if isinstance(base_input_size, int):
             base_input_size = (base_input_size, base_input_size)
         elif isinstance(base_input_size, dict):
@@ -647,7 +673,7 @@ class InputSizeManager:
                     size = base_input_size[subset]
                     base_input_size[subset] = (size, size)  # type: ignore[assignment]
             for subset in self.SUBSET_TYPES:
-                if subset in self._data_config and subset not in base_input_size:
+                if subset in self._config and subset not in base_input_size:
                     raise ValueError(f"There is {subset} data configuration but base input size for it doesn't exists.")
 
         self._base_input_size = base_input_size
@@ -667,7 +693,7 @@ class InputSizeManager:
 
         # Scale size values in data pipelines
         for subset in self.SUBSET_TYPES:
-            if subset in self._data_config:
+            if subset in self._config:
                 if isinstance(self.base_input_size, dict):
                     resize_ratio = (
                         input_size[0] / self.base_input_size[subset][0],
@@ -713,7 +739,7 @@ class InputSizeManager:
         return input_size
 
     def get_input_size_from_cfg(
-        self, subset: Union[str, List[str]] = ["test", "val", "train"]
+        self, subset: Union[str, List[str]] = ["test_dataloader", "val_dataloader", "train_dataloader"]
     ) -> Optional[Tuple[int, int]]:
         """Estimate image size using data pipeline.
 
@@ -727,8 +753,8 @@ class InputSizeManager:
             subset = [subset]
 
         for target_subset in subset:
-            if target_subset in self._data_config:
-                input_size = self._estimate_post_img_size(self._data_config[target_subset]["pipeline"])
+            if target_subset in self._config:
+                input_size = self._estimate_post_img_size(self._config[target_subset]["dataset"]["pipeline"])
                 if input_size is not None:
                     return tuple(input_size)  # type: ignore[return-value]
 
@@ -804,10 +830,10 @@ class InputSizeManager:
         return None
 
     def _get_pipelines(self, subset: str):
-        if "pipeline" in self._data_config[subset]:
-            return self._data_config[subset]["pipeline"]
-        if "dataset" in self._data_config[subset]:
-            return self._data_config[subset]["dataset"]["pipeline"]
+        if "pipeline" in self._config[subset]:
+            return self._config[subset]["pipeline"]
+        if "dataset" in self._config[subset]:
+            return self._config[subset]["dataset"]["pipeline"]
         raise RuntimeError("Failed to find pipeline.")
 
     def _set_pipeline_size_value(
