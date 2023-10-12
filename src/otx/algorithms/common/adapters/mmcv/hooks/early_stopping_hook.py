@@ -144,11 +144,6 @@ class EarlyStoppingHook(Hook):
                 self.last_iter = runner.iter
             else:
                 self.wait_count += 1
-                print_log(
-                    f"Best score: {self.best_score}, Current Score: {key_score}, "
-                    f"Patience: {self.patience} Count: {self.wait_count}",
-                    logger=runner.logger,
-                )
                 if self.wait_count >= self.patience:
                     if runner.iter - self.last_iter < self.iteration_patience:
                         print_log(
@@ -165,6 +160,11 @@ class EarlyStoppingHook(Hook):
                         logger=runner.logger,
                     )
                     runner.train_loop.stop_training = True
+            print_log(
+                f"Best score: {self.best_score}, Current Score: {key_score}, "
+                f"Patience: {self.patience} Count: {self.wait_count}",
+                logger=runner.logger,
+            )
 
     def _should_check_stopping(self, runner):
         """Called _should_check_stopping in EarlyStoppingHook."""

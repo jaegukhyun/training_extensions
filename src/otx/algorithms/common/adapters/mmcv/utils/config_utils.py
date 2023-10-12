@@ -510,6 +510,7 @@ def patch_from_hyperparams(config: Config, hyperparams, **kwargs):
     """Patch config parameters from hyperparams."""
     params = hyperparams.learning_parameters
     algo_backend = hyperparams.algo_backend
+    warmup_iters = int(params.learning_rate_warmup_iters)
     int(params.learning_rate_warmup_iters)
 
     #########################################################################################
@@ -530,6 +531,12 @@ def patch_from_hyperparams(config: Config, hyperparams, **kwargs):
     #     )
 
     #### Temporary solution with fixed schedule
+    if warmup_iters > 0:
+        config.param_scheduler[0].end = warmup_iters
+        config.param_scheduler[1].begin = warmup_iters
+    else:
+        config.param_scheduler.pop(0)
+        config.param_scheduler[0].begin = warmup_iters
 
     #########################################################################################
     # Setting early stop related params
