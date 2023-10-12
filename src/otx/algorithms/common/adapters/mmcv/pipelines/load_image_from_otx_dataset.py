@@ -120,8 +120,10 @@ class LoadResizeDataFromOTXDataset(LoadImageFromOTXDataset):
         self,
         load_ann_cfg: Optional[Dict] = None,
         resize_cfg: Optional[Dict] = None,
+        eval_mode: bool = False,
         **kwargs,
     ):
+        self.eval_mode = eval_mode
         self._enable_outer_memcache = kwargs.get("enable_memcache", True)
         kwargs["enable_memcache"] = False  # will use outer cache
         super().__init__(**kwargs)
@@ -202,9 +204,15 @@ class LoadResizeDataFromOTXDataset(LoadImageFromOTXDataset):
         cached_results = self._load_cache(results)
         if cached_results:
             return cached_results
-        results = self._load_img(results)
-        results = self._load_ann_if_any(results)
-        results.pop("dataset_item", None)  # Prevent deepcopy or caching
-        results = self._resize_img_ann_if_any(results)
+        if not self.eval_mode:
+            results = self._load_img(results)
+            results = self._load_ann_if_any(results)
+            results.pop("dataset_item", None)  # Prevent deepcopy or caching
+            results = self._resize_img_ann_if_any(results)
+        else:
+            results = self._load_img(results)
+            results = self._resize_img_ann_if_any(results)
+            results = self._load_ann_if_any(results)
+            results.pop("dataset_item", None)  # Prevent deepcopy or caching
         self._save_cache(results)
         return results

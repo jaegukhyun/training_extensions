@@ -17,6 +17,7 @@ from mmdet.models.detectors import DETR, TwoStageDetector
 from mmdet.registry import DATASETS
 from mmdet.utils import collect_env
 from mmengine.config import Config, ConfigDict
+from mmengine.registry import DefaultScope
 from mmengine.runner import Runner
 
 from otx.algorithms.common.adapters.mmcv.hooks import LossDynamicsTrackingHook
@@ -84,12 +85,14 @@ class MMDetectionTask(OTXDetectionTask):
         super().__init__(task_environment, output_path)
         self._data_cfg: Optional[Config] = None
         self._recipe_cfg: Optional[Config] = None
+        self._default_scope: Optional[DefaultScope] = None
 
     def _init_task(self):  # noqa
         """Initialize task."""
         self._recipe_cfg = OTXConfig.fromfile(os.path.join(self._model_dir, "model.py"))
         self._recipe_cfg.domain = self._task_type.domain
         self._config = self._recipe_cfg
+        self._default_scope = DefaultScope.get_instance("temp", scope_name=self._recipe_cfg.default_scope)
 
         self.set_seed()
 
