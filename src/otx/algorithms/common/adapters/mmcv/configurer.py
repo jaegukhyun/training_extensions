@@ -441,6 +441,9 @@ class BaseConfigurer:
             if ckpt_path:
                 ckpt = CheckpointLoader.load_checkpoint(ckpt_path, map_location="cpu")
                 meta = ckpt.get("meta", {})
+                # This part can be removed if mmcv1.x and mmcv2.x weights can be handled one way.
+                if "dataset_meta" in meta:
+                    meta = meta["dataset_meta"]
             return meta
 
         classes = []

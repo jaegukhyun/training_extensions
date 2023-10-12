@@ -11,6 +11,7 @@ from copy import deepcopy
 from functools import partial
 from typing import Any, Dict, Optional, Union
 
+import numpy as np
 import torch
 from mmdet.models.detectors import DETR, TwoStageDetector
 from mmdet.registry import DATASETS
@@ -234,16 +235,14 @@ class MMDetectionTask(OTXDetectionTask):
         for item in dataset:
             item.subset = Subset.TESTING
         self._data_cfg = ConfigDict(
-            data=ConfigDict(
-                train=ConfigDict(
-                    otx_dataset=None,
-                    labels=self._labels,
-                ),
-                test=ConfigDict(
-                    otx_dataset=dataset,
-                    labels=self._labels,
-                ),
-            )
+            train_dataloader=ConfigDict(
+                otx_dataset=None,
+                labels=self._labels,
+            ),
+            test_dataloader=ConfigDict(
+                otx_dataset=dataset,
+                labels=self._labels,
+            ),
         )
 
         dump_features = True
@@ -255,20 +254,8 @@ class MMDetectionTask(OTXDetectionTask):
         logger.info("infer!")
 
         # Data loader
-        mm_dataset = DATASETS.build(cfg.data.test)
-        samples_per_gpu = cfg.data.test_dataloader.get("samples_per_gpu", 1)
-        # If the batch size and the number of data are not divisible, the metric may score differently.
-        # To avoid this, use 1 if they are not divisible.
-        samples_per_gpu = samples_per_gpu if len(mm_dataset) % samples_per_gpu == 0 else 1
-        dataloader = Runner.build_dataloader(
-            mm_dataset,
-            samples_per_gpu=samples_per_gpu,
-            workers_per_gpu=cfg.data.test_dataloader.get("workers_per_gpu", 0),
-            num_gpus=len(cfg.gpu_ids),
-            dist=cfg.distributed,
-            seed=cfg.get("seed", None),
-            shuffle=False,
-        )
+        dataloader = Runner.build_dataloader(cfg.test_dataloader)
+        mm_dataset = dataloader.dataset
 
         # Target classes
         if "task_adapt" in cfg:
@@ -282,11 +269,10 @@ class MMDetectionTask(OTXDetectionTask):
             target_classes = mm_dataset.CLASSES
 
         # Model
-        model = self.build_model(cfg, fp16=cfg.get("fp16", False))
+        model = self.build_model(cfg, fp16=cfg.get("fp16", False)).cuda()
         model.CLASSES = target_classes
         model.eval()
         feature_model = model.model_s if self._train_type == TrainType.Semisupervised else model
-        model = build_data_parallel(model, cfg, distributed=False)
 
         # InferenceProgressCallback (Time Monitor enable into Infer task)
         time_monitor = None
@@ -338,7 +324,21 @@ class MMDetectionTask(OTXDetectionTask):
         # pylint: disable=no-member
         with feature_vector_hook:
             with saliency_hook:
-                eval_predictions = single_gpu_test(model, dataloader)
+                for data in dataloader:
+                    with torch.no_grad():
+                        preds = model.val_step(data)
+                        for pred in preds:
+                            pred = pred.to_dict()["pred_instances"]
+                            pred_bboxes = pred["bboxes"].cpu().numpy()
+                            pred_scores = pred["scores"].cpu().numpy()
+                            pred_labels = pred["labels"].cpu().numpy()
+
+                            dets = []
+                            for label in range(len(target_classes)):
+                                index = np.where(pred_labels == label)[0]
+                                pred_bbox_scores = np.hstack([pred_bboxes[index], pred_scores[index].reshape((-1, 1))])
+                                dets.append(pred_bbox_scores)
+                            eval_predictions.append(dets)
                 if isinstance(feature_vector_hook, nullcontext):
                     feature_vectors = [None] * len(mm_dataset)
                 else:
@@ -357,13 +357,14 @@ class MMDetectionTask(OTXDetectionTask):
             feature_vectors = mm_dataset.merge_vectors(feature_vectors, dump_features)
             saliency_maps = mm_dataset.merge_maps(saliency_maps, dump_saliency_map)
 
+        # This part need to be removed, it is leaved for debugging purpose
         metric = None
         if inference_parameters and inference_parameters.is_evaluation:
             if isinstance(mm_dataset, ImageTilingDataset):
                 metric = mm_dataset.dataset.evaluate(eval_predictions, **cfg.evaluation)
             else:
-                metric = mm_dataset.evaluate(eval_predictions, **cfg.evaluation)
-            metric = metric["mAP"] if isinstance(cfg.evaluation.metric, list) else metric[cfg.evaluation.metric]
+                metric = mm_dataset.evaluate(eval_predictions, metric="mAP")
+            metric = metric["mAP"]
 
         assert len(eval_predictions) == len(feature_vectors) == len(saliency_maps), (
             "Number of elements should be the same, however, number of outputs are "

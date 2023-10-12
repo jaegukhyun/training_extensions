@@ -29,7 +29,7 @@ from torch import distributed as dist
 from otx.algorithms.common.adapters.mmcv.hooks import OTXLoggerHook
 from otx.algorithms.common.adapters.mmcv.hooks.cancel_hook import CancelInterfaceHook
 from otx.algorithms.common.configs.training_base import TrainType
-from otx.algorithms.common.utils import UncopiableDefaultDict, append_dist_rank_suffix, set_random_seed
+from otx.algorithms.common.utils import UncopiableDefaultDict, append_dist_rank_suffix
 from otx.algorithms.common.utils.logger import get_logger
 from otx.api.entities.datasets import DatasetEntity
 from otx.api.entities.explain_parameters import ExplainParameters
@@ -319,13 +319,12 @@ class OTXTask(IInferenceTask, IExportTask, IEvaluationTask, IUnload, ABC):
         """Set seed and deterministic."""
         if self.seed is None:
             # If the seed is not present via task.train, it will be found in the recipe.
-            self.seed = self.config.get("seed", 5)
+            self.seed = self.config.randomness.get("seed", 5)
         if not self.deterministic:
             # deterministic is the same.
-            self.deterministic = self.config.get("deterministic", False)
-        self.config["seed"] = self.seed
-        self.config["deterministic"] = self.deterministic
-        set_random_seed(self.seed, logger, self.deterministic)
+            self.deterministic = self.config.randomness.get("deterministic", False)
+        self.config.randomness["seed"] = self.seed
+        self.config.randomness["deterministic"] = self.deterministic
 
     @property
     def config(self):

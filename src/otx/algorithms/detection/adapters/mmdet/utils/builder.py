@@ -3,12 +3,12 @@
 # SPDX-License-Identifier: Apache-2.0
 #
 
-from copy import deepcopy
 from typing import Optional, Union
 
 import torch
 from mmengine.config import Config, ConfigDict
 from mmengine.logging import MMLogger
+from mmengine.runner import Runner
 from mmengine.runner.checkpoint import load_checkpoint
 
 from otx.algorithms.common.utils.logger import LEVEL
@@ -31,13 +31,10 @@ def build_detector(
     Note that this function updates 'load_from' attribute of 'config'.
     """
 
-    from mmdet.models import build_detector as origin_build_detector
-
     if cfg_options is not None:
         config.merge_from_dict(cfg_options)
 
-    model_cfg = deepcopy(config.model)
-    model = origin_build_detector(model_cfg, train_cfg=train_cfg, test_cfg=test_cfg)
+    model = Runner.build_model(Runner, config.model)
     logger.setLevel("WARNING")
     model.init_weights()
     logger.setLevel(LEVEL)

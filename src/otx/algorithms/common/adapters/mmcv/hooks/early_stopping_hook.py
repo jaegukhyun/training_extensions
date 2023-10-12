@@ -111,9 +111,6 @@ class EarlyStoppingHook(Hook):
 
     def before_run(self, runner: Runner):
         """Called before_run in EarlyStoppingHook."""
-        # This hook should be skipped in test phase.
-        if runner._train_dataloader.dataset.otx_dataset is None:
-            return
         if runner.max_epochs is None:
             self.by_epoch = False
         for param_scheduler in runner.param_schedulers:
