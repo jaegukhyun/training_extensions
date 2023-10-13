@@ -7,9 +7,7 @@ task_adapt = dict(
     use_adaptive_anchor=True,
 )
 
-runner = dict(max_epochs=30)
-
-evaluation = dict(interval=1, metric="mAP", save_best="mAP")
+evaluation = dict(interval=1, metric="pascal_voc/mAP")
 
 custom_hooks = [
     dict(
@@ -28,17 +26,10 @@ custom_hooks = [
     ),
 ]
 
-lr_config = dict(
-    policy="ReduceLROnPlateau",
-    metric="mAP",
-    patience=5,
-    iteration_patience=0,
-    interval=1,
-    min_lr=1e-06,
-    warmup="linear",
-    warmup_iters=200,
-    warmup_ratio=0.3333333333333333,
-)
+param_scheduler = [
+    dict(type="LinearLR", start_factor=0.3333333333333333, by_epoch=False, begin=0, end=5),
+    dict(type="ReduceOnPlateauLR", monitor="pascal_voc/mAP", patience=4, begin=5, min_value=1e-6, rule="greater"),
+]
 
 ignore = True
 adaptive_validation_interval = dict(

@@ -1,13 +1,6 @@
 _base_ = "./schedule.py"
 
-lr_config = dict(
-    policy="ReduceLROnPlateau",
-    metric="bbox_mAP",
-    patience=30,
-    iteration_patience=0,
-    interval=1,
-    min_lr=1e-06,
-    warmup="linear",
-    warmup_iters=200,
-    warmup_ratio=0.3333333333333333,
-)
+param_scheduler = [
+    dict(type="LinearLR", start_factor=0.3333333333333333, by_epoch=False, begin=0, end=5),
+    dict(type="ReduceOnPlateauLR", monitor="pascal_voc/mAP", patience=4, begin=5, min_value=1e-6, rule="greater"),
+]

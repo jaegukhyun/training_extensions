@@ -1,28 +1,36 @@
 _base_ = [
     "../_base_/default.py",
-    "../_base_/logs/tensorboard_logger.py",
+    "../_base_/logs/log.py",
     "../_base_/optimizers/sgd.py",
-    "../_base_/runners/epoch_runner_cancel.py",
     "../_base_/schedules/plateau.py",
 ]
 
-optimizer = dict(
-    lr=0.001,
-    momentum=0.9,
-    weight_decay=0.0001,
+default_scope = "mmdet"
+
+optim_wrapper = dict(
+    type="OptimWrapper",
+    optimizer=dict(type="SGD", lr=0.001, momentum=0.9, weight_decay=0.001),
+    clip_grad=dict(
+        max_norm=35,
+        norm_type=2,
+    ),
 )
 
-optimizer_config = dict(
-    _delete_=True,
-    type="OptimizerHook",
-    #  type="SAMOptimizerHook",
-    grad_clip=dict(max_norm=35, norm_type=2),
+evaluation = dict(
+    interval=1,
+    metric="pascal_voc/mAP",
 )
+early_stop_metric = "pascal_voc/mAP"
 
-lr_config = dict(min_lr=1e-06)
-
-evaluation = dict(interval=1, metric="mAP", save_best="mAP")
-early_stop_metric = "mAP"
+# Check all of these hooks are needed
+default_hooks = dict(
+    timer=dict(type="IterTimerHook"),
+    logger=dict(type="LoggerHook", interval=100),
+    param_scheduler=dict(type="ParamSchedulerHook"),
+    checkpoint=dict(type="CheckpointHook", interval=1, save_best="pascal_voc/mAP"),
+    sampler_seed=dict(type="DistSamplerSeedHook"),
+    visualization=dict(type="DetVisualizationHook"),
+)
 
 custom_hooks = [
     dict(
@@ -34,10 +42,4 @@ custom_hooks = [
         interval=1,
         priority=75,
     ),
-    dict(
-        type="AdaptiveTrainSchedulingHook",
-        enable_adaptive_interval_hook=False,
-        enable_eval_before_run=True,
-    ),
-    dict(type="LoggerReplaceHook"),
 ]
