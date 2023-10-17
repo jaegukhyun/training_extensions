@@ -513,24 +513,6 @@ def patch_from_hyperparams(config: Config, hyperparams, **kwargs):
     warmup_iters = int(params.learning_rate_warmup_iters)
     int(params.learning_rate_warmup_iters)
 
-    #########################################################################################
-    # Setting parameters for learning rate scheduling
-    # This is temporary solution with fixed schedule
-    # This should be changed when ReducedLROnPlateau Params Scheduler is implemented
-    #########################################################################################
-
-    #### Original Codes
-    # model_label_type = config.filename.split("/")[-1]
-    # if "multilabel" in model_label_type:
-    #     lr_config = ConfigDict(max_lr=params.learning_rate, warmup=None)
-    # else:
-    #     lr_config = (
-    #         ConfigDict(warmup_iters=warmup_iters)
-    #         if warmup_iters > 0
-    #         else ConfigDict(warmup_iters=warmup_iters, warmup=None)
-    #     )
-
-    #### Temporary solution with fixed schedule
     if warmup_iters > 0:
         config.param_scheduler[0].end = warmup_iters
         config.param_scheduler[1].begin = warmup_iters

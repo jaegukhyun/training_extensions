@@ -11,11 +11,10 @@ from functools import partial
 from subprocess import CalledProcessError
 from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
-import mmcv
 import numpy as np
 import torch
+from mmengine import Config, ConfigDict
 
-# from mmcv.parallel import collate, scatter
 from .utils.mmdeploy import (
     is_mmdeploy_enabled,
     mmdeploy_init_model_helper,
@@ -34,7 +33,7 @@ class NaiveExporter:
     def export2backend(
         output_dir: str,
         model_builder: Callable,
-        cfg: mmcv.Config,
+        cfg: Config,
         input_data: Dict[Any, Any],
         *,
         precision: str = "FP32",
@@ -47,8 +46,6 @@ class NaiveExporter:
         export_type: str = "OPENVINO",
     ):
         """Function for exporting to openvino."""
-        input_data = scatter(collate([input_data], samples_per_gpu=1), [-1])[0]
-
         model = model_builder(cfg)
         model = model.cpu().eval()
         dynamic_axes = dynamic_axes if dynamic_axes else dict()
@@ -190,8 +187,8 @@ if is_mmdeploy_enabled():
         def export2backend(
             output_dir: str,
             model_builder: Callable,
-            cfg: mmcv.Config,
-            deploy_cfg: mmcv.Config,
+            cfg: Config,
+            deploy_cfg: Config,
             export_type: str,
             *,
             model_name: str = "model",
@@ -254,8 +251,8 @@ if is_mmdeploy_enabled():
         def extract_partition(
             output_dir: str,
             input_data: Any,
-            cfg: mmcv.Config,
-            deploy_cfg: mmcv.Config,
+            cfg: Config,
+            deploy_cfg: Config,
             export_type: str,
             *,
             model_name: str = "model",
@@ -293,8 +290,8 @@ if is_mmdeploy_enabled():
         def torch2onnx(
             output_dir: str,
             input_data: Any,
-            cfg: mmcv.Config,
-            deploy_cfg: mmcv.Config,
+            cfg: Config,
+            deploy_cfg: Config,
             *,
             model_name: str = "model",
         ) -> str:
@@ -315,7 +312,7 @@ if is_mmdeploy_enabled():
         def partition_onnx(
             output_dir,
             onnx_path: str,
-            partition_cfgs: Union[mmcv.ConfigDict, List[mmcv.ConfigDict]],
+            partition_cfgs: Union[ConfigDict, List[ConfigDict]],
         ) -> Tuple[str, ...]:
             """Function for parition onnx."""
             partitioned_paths = []
@@ -338,7 +335,7 @@ if is_mmdeploy_enabled():
         def onnx2openvino(
             output_dir: str,
             onnx_path: str,
-            deploy_cfg: Union[str, mmcv.Config],
+            deploy_cfg: Union[str, Config],
             *,
             model_name: Optional[str] = None,
         ) -> Tuple[str, str]:

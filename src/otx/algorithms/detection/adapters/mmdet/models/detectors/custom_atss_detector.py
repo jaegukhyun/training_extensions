@@ -5,19 +5,11 @@
 
 import functools
 
-import torch
 from mmdet.models.detectors.atss import ATSS
 from mmdet.registry import MODELS
 
-from otx.algorithms.common.adapters.mmcv.hooks.recording_forward_hook import (
-    FeatureVectorHook,
-)
-from otx.algorithms.common.adapters.mmdeploy.utils import is_mmdeploy_enabled
 from otx.algorithms.common.utils.logger import get_logger
 from otx.algorithms.common.utils.task_adapt import map_class_names
-from otx.algorithms.detection.adapters.mmdet.hooks.det_class_probability_map_hook import (
-    DetClassProbabilityMapHook,
-)
 from otx.algorithms.detection.adapters.mmdet.models.loss_dyns import TrackingLossType
 
 from .l2sp_detector_mixin import L2SPDetectorMixin
@@ -81,61 +73,3 @@ class CustomATSS(SAMDetectorMixin, DetLossDynamicsTrackingMixin, L2SPDetectorMix
 
             # Replace checkpoint weight by mixed weights
             chkpt_dict[chkpt_name] = model_param
-
-
-if is_mmdeploy_enabled():
-    from mmdeploy.core import FUNCTION_REWRITER, mark
-    from mmdeploy.utils import is_dynamic_shape
-
-    @FUNCTION_REWRITER.register_rewriter(
-        "otx.algorithms.detection.adapters.mmdet.models.detectors.custom_atss_detector.CustomATSS.simple_test"
-    )
-    def custom_atss__simple_test(ctx, self, img, img_metas, **kwargs):
-        """Function for custom_atss__simple_test."""
-        feat = self.extract_feat(img)
-        outs = self.bbox_head(feat)
-        bbox_results = self.bbox_head.get_bboxes(*outs, img_metas=img_metas, cfg=self.test_cfg, **kwargs)
-
-        if ctx.cfg["dump_features"]:
-            feature_vector = FeatureVectorHook.func(feat)
-            cls_scores = outs[0]
-            postprocess_kwargs = {
-                "normalize": ctx.cfg["normalize_saliency_maps"],
-                "use_cls_softmax": ctx.cfg["softmax_saliency_maps"],
-            }
-            saliency_map = DetClassProbabilityMapHook(self, **postprocess_kwargs).func(
-                feature_map=cls_scores, cls_scores_provided=True
-            )
-            return (*bbox_results, feature_vector, saliency_map)
-
-        return bbox_results
-
-    @mark("custom_atss_forward", inputs=["input"], outputs=["dets", "labels", "feats", "saliencies"])
-    def __forward_impl(ctx, self, img, img_metas, **kwargs):
-        """Internal Function for __forward_impl."""
-        assert isinstance(img, torch.Tensor)
-
-        deploy_cfg = ctx.cfg
-        is_dynamic_flag = is_dynamic_shape(deploy_cfg)
-        # get origin input shape as tensor to support onnx dynamic shape
-        img_shape = torch._shape_as_tensor(img)[2:]
-        if not is_dynamic_flag:
-            img_shape = [int(val) for val in img_shape]
-        img_metas[0]["img_shape"] = img_shape
-        return self.simple_test(img, img_metas, **kwargs)
-
-    @FUNCTION_REWRITER.register_rewriter(
-        "otx.algorithms.detection.adapters.mmdet.models.detectors.custom_atss_detector.CustomATSS.forward"
-    )
-    def custom_atss__forward(ctx, self, img, img_metas=None, return_loss=False, **kwargs):
-        """Internal Function for __forward for CustomATSS."""
-        if img_metas is None:
-            img_metas = [{}]
-        else:
-            assert len(img_metas) == 1, "do not support aug_test"
-            img_metas = img_metas[0]
-
-        if isinstance(img, list):
-            img = img[0]
-
-        return __forward_impl(ctx, self, img, img_metas=img_metas, **kwargs)

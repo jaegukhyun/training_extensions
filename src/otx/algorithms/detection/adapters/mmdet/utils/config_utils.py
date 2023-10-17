@@ -163,7 +163,7 @@ def patch_input_preprocessing(cfg: ConfigDict, deploy_cfg: ConfigDict):
     Returns:
         None: This function updates the input `deploy_cfg` object directly.
     """
-    normalize_cfgs = get_configs_by_pairs(cfg.data.test.pipeline, dict(type="Normalize"))
+    normalize_cfgs = get_configs_by_pairs(cfg.model, dict(type="DetDataPreprocessor"))
     assert len(normalize_cfgs) == 1
     normalize_cfg: dict = normalize_cfgs[0]
 
@@ -211,7 +211,7 @@ def patch_input_shape(cfg: ConfigDict, deploy_cfg: ConfigDict):
         None: This function updates the input `deploy_cfg` object directly.
     """
     input_size_manager = InputSizeManager(cfg)
-    size = input_size_manager.get_input_size_from_cfg("test")
+    size = input_size_manager.get_input_size_from_cfg("test_dataloader")
 
     assert all(isinstance(i, int) and i > 0 for i in size)
     # default is static shape to prevent an unexpected error
