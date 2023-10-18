@@ -27,6 +27,7 @@ class SSDAnchorGeneratorClustered(AnchorGenerator):
 
         self.center_offset = 0
         self.base_anchors = self.gen_base_anchors()
+        self.use_box_type = False
 
     def gen_base_anchors(self):
         """Generate base anchor for SSD."""

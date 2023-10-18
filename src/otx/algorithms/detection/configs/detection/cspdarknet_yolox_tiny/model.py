@@ -20,6 +20,13 @@ _base_ = ["../../../../../recipes/stages/detection/incremental.py", "../../base/
 
 model = dict(
     type="CustomYOLOX",
+    data_preprocessor=dict(
+        type="DetDataPreprocessor",
+        mean=[123.675, 116.28, 103.53],
+        std=[58.395, 57.12, 57.375],
+        bgr_to_rgb=True,
+        pad_size_divisor=32,
+    ),
     backbone=dict(type="CSPDarknet", deepen_factor=0.33, widen_factor=0.375, out_indices=(2, 3, 4)),
     neck=dict(type="YOLOXPAFPN", in_channels=[96, 192, 384], out_channels=96, num_csp_blocks=1),
     bbox_head=dict(type="CustomYOLOXHead", num_classes=80, in_channels=96, feat_channels=96),

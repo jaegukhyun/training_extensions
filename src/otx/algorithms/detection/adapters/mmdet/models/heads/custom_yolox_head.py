@@ -1,12 +1,17 @@
 """Custom YOLOX head for OTX template."""
 
+from typing import List, Optional, Sequence, Union
+
 import torch
 import torch.nn.functional as F
 from mmdet.models.dense_heads.yolox_head import YOLOXHead
 from mmdet.models.losses.utils import weight_reduce_loss
 from mmdet.models.utils.misc import multi_apply
 from mmdet.registry import MODELS
+from mmdet.utils import OptInstanceList
 from mmdet.utils.dist_utils import reduce_mean
+from mmengine.structures import InstanceData
+from torch import Tensor
 
 from otx.algorithms.detection.adapters.mmdet.models.heads.cross_dataset_detector_head import (
     TrackingLossDynamicsMixIn,
@@ -29,38 +34,59 @@ class CustomYOLOXHeadTrackingLossDynamics(TrackingLossDynamicsMixIn, CustomYOLOX
     tracking_loss_types = (TrackingLossType.cls, TrackingLossType.bbox)
 
     @TrackingLossDynamicsMixIn._wrap_loss
-    def loss(self, cls_scores, bbox_preds, objectnesses, gt_bboxes, gt_labels, img_metas, gt_bboxes_ignore=None):
-        """Compute loss of the head.
+    def loss_by_feat(
+        self,
+        cls_scores: Sequence[Tensor],
+        bbox_preds: Sequence[Tensor],
+        objectnesses: Sequence[Tensor],
+        batch_gt_instances: Sequence[InstanceData],
+        batch_img_metas: Sequence[dict],
+        batch_gt_instances_ignore: OptInstanceList = None,
+    ) -> dict:
+        """Calculate the loss based on the features extracted by the detection head.
 
         Args:
-            cls_scores (list[Tensor]): Box scores for each scale level,
+            cls_scores (Sequence[Tensor]): Box scores for each scale level,
                 each is a 4D-tensor, the channel number is
                 num_priors * num_classes.
-            bbox_preds (list[Tensor]): Box energies / deltas for each scale
+            bbox_preds (Sequence[Tensor]): Box energies / deltas for each scale
                 level, each is a 4D-tensor, the channel number is
                 num_priors * 4.
-            objectnesses (list[Tensor], Optional): Score factor for
+            objectnesses (Sequence[Tensor]): Score factor for
                 all scale level, each is a 4D-tensor, has shape
                 (batch_size, 1, H, W).
-            gt_bboxes (list[Tensor]): Ground truth bboxes for each image with
-                shape (num_gts, 4) in [tl_x, tl_y, br_x, br_y] format.
-            gt_labels (list[Tensor]): class indices corresponding to each box
-            img_metas (list[dict]): Meta information of each image, e.g.,
+            batch_gt_instances (list[:obj:`InstanceData`]): Batch of
+                gt_instance. It usually includes ``bboxes`` and ``labels``
+                attributes.
+            batch_img_metas (list[dict]): Meta information of each image, e.g.,
                 image size, scaling factor, etc.
-            gt_bboxes_ignore (None | list[Tensor]): specify which bounding
-                boxes can be ignored when computing the loss.
+            batch_gt_instances_ignore (list[:obj:`InstanceData`], optional):
+                Batch of gt_instances_ignore. It includes ``bboxes`` attribute
+                data that is ignored during training and testing.
+                Defaults to None.
+
+
+        Returns:
+            dict[str, Tensor]: A dictionary of losses.
         """
-        num_imgs = len(img_metas)
+        num_imgs = len(batch_img_metas)
+        if batch_gt_instances_ignore is None:
+            batch_gt_instances_ignore = [None] * num_imgs
+
         featmap_sizes = [cls_score.shape[2:] for cls_score in cls_scores]
         mlvl_priors = self.prior_generator.grid_priors(
             featmap_sizes, dtype=cls_scores[0].dtype, device=cls_scores[0].device, with_stride=True
         )
 
-        flatten_cls_preds = [
+        flatten_cls_preds: Union[List[Tensor], Tensor] = [
             cls_pred.permute(0, 2, 3, 1).reshape(num_imgs, -1, self.cls_out_channels) for cls_pred in cls_scores
         ]
-        flatten_bbox_preds = [bbox_pred.permute(0, 2, 3, 1).reshape(num_imgs, -1, 4) for bbox_pred in bbox_preds]
-        flatten_objectness = [objectness.permute(0, 2, 3, 1).reshape(num_imgs, -1) for objectness in objectnesses]
+        flatten_bbox_preds: Union[List[Tensor], Tensor] = [
+            bbox_pred.permute(0, 2, 3, 1).reshape(num_imgs, -1, 4) for bbox_pred in bbox_preds
+        ]
+        flatten_objectness: Union[List[Tensor], Tensor] = [
+            objectness.permute(0, 2, 3, 1).reshape(num_imgs, -1) for objectness in objectnesses
+        ]
 
         flatten_cls_preds = torch.cat(flatten_cls_preds, dim=1)
         flatten_bbox_preds = torch.cat(flatten_bbox_preds, dim=1)
@@ -70,7 +96,7 @@ class CustomYOLOXHeadTrackingLossDynamics(TrackingLossDynamicsMixIn, CustomYOLOX
 
         # Init variables for loss dynamics tracking
         self.cur_batch_idx = 0
-        self.max_gt_bboxes_len = max([len(gt_bbox) for gt_bbox in gt_bboxes])
+        self.max_gt_bboxes_len = max([len(batch_gt_instance.bboxes) for batch_gt_instance in batch_gt_instances])
 
         (
             pos_masks,
@@ -81,13 +107,14 @@ class CustomYOLOXHeadTrackingLossDynamics(TrackingLossDynamicsMixIn, CustomYOLOX
             num_fg_imgs,
             pos_assigned_gt_inds_list,
         ) = multi_apply(
-            self._get_target_single,
-            flatten_cls_preds.detach(),
-            flatten_objectness.detach(),
+            self._get_targets_single,
             flatten_priors.unsqueeze(0).repeat(num_imgs, 1, 1),
+            flatten_cls_preds.detach(),
             flatten_bboxes.detach(),
-            gt_bboxes,
-            gt_labels,
+            flatten_objectness.detach(),
+            batch_gt_instances,
+            batch_img_metas,
+            batch_gt_instances_ignore,
         )
 
         # The experimental results show that ‘reduce_mean’ can improve
@@ -140,28 +167,40 @@ class CustomYOLOXHeadTrackingLossDynamics(TrackingLossDynamicsMixIn, CustomYOLOX
         return loss_dict
 
     @torch.no_grad()
-    def _get_target_single(self, cls_preds, objectness, priors, decoded_bboxes, gt_bboxes, gt_labels):
+    def _get_targets_single(
+        self,
+        priors: Tensor,
+        cls_preds: Tensor,
+        decoded_bboxes: Tensor,
+        objectness: Tensor,
+        gt_instances: InstanceData,
+        img_meta: dict,
+        gt_instances_ignore: Optional[InstanceData] = None,
+    ) -> tuple:
         """Compute classification, regression, and objectness targets for priors in a single image.
 
         Args:
-            cls_preds (Tensor): Classification predictions of one image,
-                a 2D-Tensor with shape [num_priors, num_classes]
-            objectness (Tensor): Objectness predictions of one image,
-                a 1D-Tensor with shape [num_priors]
             priors (Tensor): All priors of one image, a 2D-Tensor with shape
                 [num_priors, 4] in [cx, xy, stride_w, stride_y] format.
+            cls_preds (Tensor): Classification predictions of one image,
+                a 2D-Tensor with shape [num_priors, num_classes]
             decoded_bboxes (Tensor): Decoded bboxes predictions of one image,
                 a 2D-Tensor with shape [num_priors, 4] in [tl_x, tl_y,
                 br_x, br_y] format.
-            gt_bboxes (Tensor): Ground truth bboxes of one image, a 2D-Tensor
-                with shape [num_gts, 4] in [tl_x, tl_y, br_x, br_y] format.
-            gt_labels (Tensor): Ground truth labels of one image, a Tensor
-                with shape [num_gts].
+            objectness (Tensor): Objectness predictions of one image,
+                a 1D-Tensor with shape [num_priors]
+            gt_instances (:obj:`InstanceData`): Ground truth of instance
+                annotations. It should includes ``bboxes`` and ``labels``
+                attributes.
+            img_meta (dict): Meta information for current image.
+            gt_instances_ignore (:obj:`InstanceData`, optional): Instances
+                to be ignored during training. It includes ``bboxes`` attribute
+                data that is ignored during training and testing.
+                Defaults to None.
         """
 
         num_priors = priors.size(0)
-        num_gts = gt_labels.size(0)
-        gt_bboxes = gt_bboxes.to(decoded_bboxes.dtype)
+        num_gts = len(gt_instances)
         # No target
         if num_gts == 0:
             cls_target = cls_preds.new_zeros((0, self.num_classes))
@@ -175,11 +214,13 @@ class CustomYOLOXHeadTrackingLossDynamics(TrackingLossDynamicsMixIn, CustomYOLOX
         # but use center priors without offset to regress bboxes.
         offset_priors = torch.cat([priors[:, :2] + priors[:, 2:] * 0.5, priors[:, 2:]], dim=-1)
 
+        scores = cls_preds.sigmoid() * objectness.unsqueeze(1).sigmoid()
+        pred_instances = InstanceData(bboxes=decoded_bboxes, scores=scores.sqrt_(), priors=offset_priors)
         assign_result = self.assigner.assign(
-            cls_preds.sigmoid() * objectness.unsqueeze(1).sigmoid(), offset_priors, decoded_bboxes, gt_bboxes, gt_labels
+            pred_instances=pred_instances, gt_instances=gt_instances, gt_instances_ignore=gt_instances_ignore
         )
 
-        sampling_result = self.sampler.sample(assign_result, priors, gt_bboxes)
+        sampling_result = self.sampler.sample(assign_result, pred_instances, gt_instances)
         pos_inds = sampling_result.pos_inds
         num_pos_per_img = pos_inds.size(0)
 

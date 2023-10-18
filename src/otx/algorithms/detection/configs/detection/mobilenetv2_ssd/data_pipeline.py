@@ -30,7 +30,8 @@ train_pipeline = [
         hue_delta=18,
     ),
     dict(type="MinIoURandomCrop", min_ious=(0.1, 0.3, 0.5, 0.7, 0.9), min_crop_size=0.1),
-    dict(type="RandomFlip", flip_ratio=0.5),
+    dict(type="Resize", scale=__img_size, keep_ratio=False),
+    dict(type="RandomFlip", prob=0.5),
     dict(
         type="PackDetInputs",
         meta_keys=[
@@ -61,10 +62,8 @@ val_pipeline = [
     ),
 ]
 test_pipeline = [
-    dict(
-        load_ann_cfg=dict(type="LoadAnnotationFromOTXDataset", with_bbox=True),
-        resize_cfg=dict(type="Resize", scale=__img_size, keep_ratio=False),
-    ),
+    dict(type="LoadImageFromOTXDataset"),
+    dict(type="Resize", scale=__img_size, keep_ratio=False),
     dict(
         type="PackDetInputs",
         meta_keys=["ori_filename", "scale_factor", "ori_shape", "filename", "img_shape", "pad_shape"],

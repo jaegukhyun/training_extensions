@@ -57,9 +57,7 @@ def cluster_anchors(recipe_config: Config, dataset: DatasetEntity):
 
     logger.info("Collecting statistics from training dataset to cluster anchor boxes...")
     [target_wh] = [
-        transforms.img_scale
-        for transforms in recipe_config.data.test.pipeline
-        if transforms.type == "MultiScaleFlipAug"
+        transforms.scale for transforms in recipe_config.test_dataloader.dataset.pipeline if transforms.type == "Resize"
     ]
     prev_generator = recipe_config.model.bbox_head.anchor_generator
     group_as = [len(width) for width in prev_generator.widths]

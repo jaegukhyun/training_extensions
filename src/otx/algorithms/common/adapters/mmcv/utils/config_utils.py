@@ -494,7 +494,7 @@ def patch_persistent_workers(config: Config):
         if "pin_memory" not in dataloader_cfg:
             dataloader_cfg["pin_memory"] = True
 
-        config[f"{subset}_dataloader"] = dataloader_cfg
+        config[subset] = dataloader_cfg
 
 
 def get_adaptive_num_workers(num_dataloader: int = 1) -> Union[int, None]:
