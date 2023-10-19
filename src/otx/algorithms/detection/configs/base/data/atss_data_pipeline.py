@@ -41,7 +41,7 @@ train_pipeline = [
 val_pipeline = [
     dict(
         type="LoadResizeDataFromOTXDataset",
-        load_ann_cfg=dict(type="LoadAnnotationFromOTXDataset", with_bbox=True),
+        load_ann_cfg=dict(type="LoadAnnotationFromOTXDataset", with_bbox=False),
         resize_cfg=dict(type="Resize", scale=(992, 736), keep_ratio=False),
         eval_mode=True,
         enable_memcache=True,

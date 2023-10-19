@@ -12,6 +12,9 @@ _base_ = [
 
 model = dict(
     type="CustomATSS",
+    data_preprocessor=dict(
+        type="DetDataPreprocessor", mean=[0, 0, 0], std=[255, 255, 255], bgr_to_rgb=True, pad_size_divisor=32
+    ),
     backbone=dict(
         type="ResNeXt",
         depth=101,
@@ -81,3 +84,4 @@ load_from = "https://storage.openvinotoolkit.org/repositories/openvino_training_
 models/object_detection/v2/resnext101_atss_070623.pth"
 
 fp16 = dict(loss_scale=512.0)
+ignore = True

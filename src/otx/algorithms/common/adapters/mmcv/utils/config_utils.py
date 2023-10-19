@@ -515,7 +515,10 @@ def patch_from_hyperparams(config: Config, hyperparams, **kwargs):
 
     if warmup_iters > 0:
         config.param_scheduler[0].end = warmup_iters
-        config.param_scheduler[1].begin = warmup_iters
+        if warmup_iters < params.num_iters:
+            config.param_scheduler[1].begin = warmup_iters
+        else:
+            config.param_scheduler.pop(1)
     else:
         config.param_scheduler.pop(0)
         config.param_scheduler[0].begin = warmup_iters

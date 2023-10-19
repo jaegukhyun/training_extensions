@@ -6,7 +6,6 @@
 # pylint: disable=invalid-name
 
 __img_size = (640, 640)
-__img_norm_cfg = dict(mean=[0.0, 0.0, 0.0], std=[1.0, 1.0, 1.0], to_rgb=False)
 
 train_pipeline = [
     dict(type="Mosaic", img_scale=__img_size, pad_val=114.0),
@@ -17,19 +16,15 @@ train_pipeline = [
     ),
     dict(type="MixUp", img_scale=__img_size, ratio_range=(0.8, 1.6), pad_val=114.0),
     dict(type="YOLOXHSVRandomAug"),
-    dict(type="RandomFlip", flip_ratio=0.5),
-    dict(type="Resize", img_scale=__img_size, keep_ratio=True),
+    dict(type="RandomFlip", prob=0.5),
+    dict(type="Resize", scale=__img_size, keep_ratio=True),
     dict(type="Pad", pad_to_square=True, pad_val=dict(img=(114.0, 114.0, 114.0))),
-    dict(type="Normalize", **__img_norm_cfg),
-    dict(type="DefaultFormatBundle"),
     dict(
-        type="Collect",
-        keys=["img", "gt_bboxes", "gt_labels"],
+        type="PackDetInputs",
         meta_keys=[
             "ori_filename",
             "flip_direction",
             "scale_factor",
-            "img_norm_cfg",
             "gt_ann_ids",
             "flip",
             "ignored_labels",
@@ -41,45 +36,77 @@ train_pipeline = [
     ),
 ]
 
-test_pipeline = [
-    dict(type="LoadImageFromOTXDataset"),
+val_pipeline = [
     dict(
-        type="MultiScaleFlipAug",
-        img_scale=__img_size,
-        flip=False,
-        transforms=[
-            dict(type="Resize", keep_ratio=True),
-            dict(type="RandomFlip"),
-            dict(type="Pad", size=__img_size, pad_val=114.0),
-            dict(type="Normalize", **__img_norm_cfg),
-            dict(type="DefaultFormatBundle"),
-            dict(type="Collect", keys=["img"]),
-        ],
+        type="LoadResizeDataFromOTXDataset",
+        load_ann_cfg=dict(type="LoadAnnotationFromOTXDataset", with_bbox=True),
+        resize_cfg=dict(type="Resize", scale=__img_size, keep_ratio=True),
+        eval_mode=True,
+        enable_memcache=True,  # Cache after resizing image
+    ),
+    dict(
+        type="PackDetInputs",
+        meta_keys=["ori_filename", "scale_factor", "ori_shape", "filename", "img_shape", "pad_shape"],
     ),
 ]
 
-__dataset_type = "OTXDetDataset"
+test_pipeline = [
+    dict(type="LoadImageFromOTXDataset"),
+    dict(type="Resize", scale=__img_size, keep_ratio=True),
+    dict(
+        type="PackDetInputs",
+        meta_keys=["ori_filename", "scale_factor", "ori_shape", "filename", "img_shape", "pad_shape"],
+    ),
+]
 
-data = dict(
-    train=dict(
+train_dataloader = dict(
+    batch_size=2,
+    num_workers=2,
+    persistent_workers=True,
+    sampler=dict(type="DefaultSampler", shuffle=True),
+    batch_sampler=dict(type="AspectRatioBatchSampler"),
+    dataset=dict(
         type="MultiImageMixDataset",
         dataset=dict(
-            type=__dataset_type,
+            type="OTXDetDataset",
+            filter_cfg=dict(filter_empty_gt=True, min_size=32),
             pipeline=[
-                dict(type="LoadImageFromOTXDataset", to_float32=False, enable_memcache=True),
-                dict(type="LoadAnnotationFromOTXDataset", with_bbox=True),
+                dict(
+                    type="LoadResizeDataFromOTXDataset",
+                    load_ann_cfg=dict(type="LoadAnnotationFromOTXDataset", with_bbox=True),
+                    resize_cfg=dict(
+                        type="Resize",
+                        scale=__img_size,
+                        keep_ratio=True,
+                        downscale_only=True,
+                    ),  # Resize to intermediate size if org image is bigger
+                    to_float32=False,
+                    enable_memcache=True,  # Cache after resizing image & annotations
+                ),
             ],
         ),
         pipeline=train_pipeline,
     ),
-    val=dict(
-        type=__dataset_type,
-        test_mode=True,
-        pipeline=test_pipeline,
-    ),
-    test=dict(
-        type=__dataset_type,
-        test_mode=True,
-        pipeline=test_pipeline,
-    ),
 )
+val_dataloader = dict(
+    batch_size=1,
+    num_workers=2,
+    persistent_workers=True,
+    drop_last=False,
+    sampler=dict(type="DefaultSampler", shuffle=False),
+    dataset=dict(type="OTXDetDataset", test_mode=True, pipeline=val_pipeline),
+)
+test_dataloader = dict(
+    batch_size=1,
+    num_workers=2,
+    persistent_workers=True,
+    drop_last=False,
+    sampler=dict(type="DefaultSampler", shuffle=False),
+    dataset=dict(type="OTXDetDataset", test_mode=True, pipeline=test_pipeline),
+)
+
+val_evaluator = dict(
+    type="VOCMetric",
+    metric="mAP",
+)
+test_evaluator = val_evaluator

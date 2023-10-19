@@ -85,16 +85,18 @@ for template in _templates:
         templates.append(template)  # YOLOX-S, and YOLOX-X use same model and data pipeline config with YOLOX-L
 templates_ids = [template.model_template_id for template in templates]
 
-experimental_templates = [
-    parse_model_template(
-        "src/otx/algorithms/detection/configs/detection/resnet50_deformable_detr/template_experimental.yaml"
-    ),
-    parse_model_template("src/otx/algorithms/detection/configs/detection/resnet50_dino/template_experimental.yaml"),
-    parse_model_template(
-        "src/otx/algorithms/detection/configs/detection/resnet50_lite_dino/template_experimental.yaml"
-    ),
-]
-experimental_template_ids = [template.model_template_id for template in experimental_templates]
+# experimental_templates = [
+#     parse_model_template(
+#         "src/otx/algorithms/detection/configs/detection/resnet50_deformable_detr/template_experimental.yaml"
+#     ),
+#     parse_model_template("src/otx/algorithms/detection/configs/detection/resnet50_dino/template_experimental.yaml"),
+#     parse_model_template(
+#         "src/otx/algorithms/detection/configs/detection/resnet50_lite_dino/template_experimental.yaml"
+#     ),
+# ]
+# experimental_template_ids = [template.model_template_id for template in experimental_templates]
+experimental_templates = []
+experimental_template_ids = []
 
 templates_w_experimental = templates + experimental_templates
 templates_ids_w_experimental = templates_ids + experimental_template_ids
