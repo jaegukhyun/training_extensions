@@ -14,7 +14,6 @@
 # See the License for the specific language governing permissions
 # and limitations under the License.
 
-from collections import OrderedDict
 from typing import Dict, List, Sequence, Tuple, Union
 
 import numpy as np
@@ -23,10 +22,8 @@ from mmdet.datasets import BaseDetDataset
 from mmdet.registry import DATASETS
 from mmdet.structures.mask.structures import PolygonMasks
 from mmengine.config import Config
-from mmengine.logging import print_log
 
 from otx.algorithms.common.utils.data import get_old_new_img_indices
-from otx.algorithms.detection.adapters.mmdet.evaluation import Evaluator
 from otx.api.entities.dataset_item import DatasetItemEntity
 from otx.api.entities.datasets import DatasetEntity
 from otx.api.entities.label import Domain, LabelEntity
@@ -93,7 +90,7 @@ def get_annotation_mmdet_format(
         ann_info = dict(
             bboxes=np.zeros((0, 4), dtype=np.float32),
             labels=np.array([], dtype=int),
-            masks=[],
+            masks=np.zeros((0, 1), dtype=np.float32),
             ann_ids=[],
         )
     return ann_info
@@ -176,7 +173,7 @@ class OTXDetDataset(BaseDetDataset):
         self.test_mode = test_mode
         self.max_refetch = max_refetch
 
-        self._metainfo = {"classes": self.CLASSES}
+        self._metainfo = {"classes": self.CLASSES, "domain": self.domain}
 
         # Instead of using list data_infos as in BaseDetDataset, this implementation of dataset
         # uses a proxy class with overriden __len__ and __getitem__; this proxy class
@@ -194,8 +191,6 @@ class OTXDetDataset(BaseDetDataset):
             self.img_indices = get_old_new_img_indices(self.labels, new_classes, self.otx_dataset)
 
         self.pipeline = Compose(pipeline)
-        annotation = [self.get_ann_info(i) for i in range(len(self))]
-        self.evaluator = Evaluator(annotation, self.domain, self.CLASSES)
         self.serialize_data = None  # OTX has own data caching mechanism
         self._fully_initialized = False
         self.full_init()
@@ -226,44 +221,6 @@ class OTXDetDataset(BaseDetDataset):
         dataset_item = self.otx_dataset[idx]
         labels = self.labels
         return get_annotation_mmdet_format(dataset_item, labels, self.domain)
-
-    def evaluate(  # pylint: disable=too-many-branches
-        self,
-        results,
-        metric="mAP",
-        logger=None,
-        proposal_nums=(100, 300, 1000),
-        iou_thr=0.5,
-        scale_ranges=None,
-    ):
-        """Evaluate the dataset.
-
-        Args:
-            results (list): Testing results of the dataset.
-            metric (str | list[str]): Metrics to be evaluated.
-            logger (logging.Logger | None | str): Logger used for printing
-                related information during evaluation. Default: None.
-            proposal_nums (Sequence[int]): Proposal number used for evaluating
-                recalls, such as recall@100, recall@1000.
-                Default: (100, 300, 1000).
-            iou_thr (float | list[float]): IoU threshold. Default: 0.5.
-            scale_ranges (list[tuple] | None): Scale ranges for evaluating mAP.
-                Default: None.
-        """
-        allowed_metrics = ["mAP"]
-        eval_results = OrderedDict()
-        if metric not in allowed_metrics:
-            raise KeyError(f"metric {metric} is not supported")
-        iou_thrs = [iou_thr] if isinstance(iou_thr, float) else iou_thr
-        assert isinstance(iou_thrs, list)
-        mean_aps = []
-        for iou_thr in iou_thrs:  # pylint: disable=redefined-argument-from-local
-            print_log(f'\n{"-" * 15}iou_thr: {iou_thr}{"-" * 15}')
-            mean_ap, _ = self.evaluator.evaluate(results, logger, iou_thr, scale_ranges)
-            mean_aps.append(mean_ap)
-            eval_results[f"AP{int(iou_thr * 100):02d}"] = round(mean_ap, 3)
-        eval_results["mAP"] = sum(mean_aps) / len(mean_aps)
-        return eval_results
 
 
 # pylint: disable=too-many-arguments
@@ -331,8 +288,6 @@ class ImageTilingDataset(OTXDetDataset):
         self.pipeline = Compose(pipeline)
         self.test_mode = test_mode
         self.num_samples = len(self.dataset)  # number of original samples
-        annotation = [self.get_ann_info(i) for i in range(len(self))]
-        self.evaluator = Evaluator(annotation, self.dataset.domain, self.CLASSES)
 
     def __len__(self) -> int:
         """Get the length of the dataset."""

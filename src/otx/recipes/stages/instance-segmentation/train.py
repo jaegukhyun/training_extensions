@@ -1,31 +1,37 @@
 _base_ = [
     "../_base_/default.py",
-    "../_base_/logs/tensorboard_logger.py",
+    "../_base_/logs/log.py",
     "../_base_/optimizers/sgd.py",
-    "../_base_/runners/epoch_runner_cancel.py",
     "../_base_/schedules/plateau.py",
 ]
 
-optimizer = dict(
-    lr=0.001,
-    momentum=0.9,
-    weight_decay=0.0001,
+default_scope = "mmdet"
+
+optim_wrapper = dict(
+    type="OptimWrapper",
+    optimizer=dict(type="SGD", lr=0.001, momentum=0.9, weight_decay=0.001),
 )
 
-lr_config = dict(
-    policy="ReduceLROnPlateau",
-    metric="mAP",
-    patience=5,
-    iteration_patience=0,
+evaluation = dict(
     interval=1,
-    min_lr=0.000001,
-    warmup="linear",
-    warmup_iters=200,
-    warmup_ratio=1.0 / 3,
+    metric="pascal_voc/mAP",
 )
+early_stop_metric = "pascal_voc/mAP"
 
-evaluation = dict(interval=1, metric="mAP", save_best="mAP")
-early_stop_metric = "mAP"
+param_scheduler = [
+    dict(type="LinearLR", start_factor=0.3333333333333333, by_epoch=False, begin=0, end=5),
+    dict(type="ReduceOnPlateauLR", monitor="pascal_voc/mAP", patience=4, begin=5, min_value=1e-6, rule="greater"),
+]
+
+# Check all of these hooks are needed
+default_hooks = dict(
+    timer=dict(type="IterTimerHook"),
+    logger=dict(type="LoggerHook", interval=100),
+    param_scheduler=dict(type="ParamSchedulerHook"),
+    checkpoint=dict(type="CheckpointHook", interval=1, save_best="pascal_voc/mAP"),
+    sampler_seed=dict(type="DistSamplerSeedHook"),
+    visualization=dict(type="DetVisualizationHook"),
+)
 
 custom_hooks = [
     dict(
@@ -43,9 +49,4 @@ custom_hooks = [
         enable_eval_before_run=True,
     ),
     dict(type="LoggerReplaceHook"),
-    dict(
-        type="CustomModelEMAHook",
-        priority="ABOVE_NORMAL",
-        epoch_momentum=0.4,
-    ),
 ]

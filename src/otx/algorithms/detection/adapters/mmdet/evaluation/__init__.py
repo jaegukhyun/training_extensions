@@ -3,8 +3,8 @@
 # SPDX-License-Identifier: Apache-2.0
 #
 
-from .evaluator import Evaluator
+from .evaluator import OTXDetMetric
 
 __all__ = [
-    "Evaluator",
+    "OTXDetMetric",
 ]

@@ -16,6 +16,9 @@ from otx.algorithms.common.utils.logger import get_logger
 logger = get_logger()
 
 
+# TODO. Need to implement custom model ema hook properly.
+
+
 @HOOKS.register_module()
 class CustomModelEMAHook(EMAHook):
     """Custom EMAHook to update momentum for ema over training."""

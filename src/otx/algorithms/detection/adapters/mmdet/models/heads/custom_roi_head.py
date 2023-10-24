@@ -3,13 +3,20 @@
 # SPDX-License-Identifier: Apache-2.0
 #
 
+from typing import List, Optional, Tuple
+
 import torch
 from mmdet.models.losses import accuracy
 from mmdet.models.roi_heads.bbox_heads.convfc_bbox_head import Shared2FCBBoxHead
 from mmdet.models.roi_heads.standard_roi_head import StandardRoIHead
-from mmdet.models.utils.misc import multi_apply
+from mmdet.models.task_modules.samplers import SamplingResult
+from mmdet.models.utils import multi_apply, unpack_gt_instances
 from mmdet.registry import MODELS
+from mmdet.structures import DetDataSample
 from mmdet.structures.bbox import bbox2roi
+from mmdet.utils import InstanceList
+from mmengine.config import ConfigDict
+from torch import Tensor
 
 from otx.algorithms.detection.adapters.mmdet.models.heads.cross_dataset_detector_head import (
     CrossDatasetDetectorHead,
@@ -33,25 +40,80 @@ class CustomRoIHead(StandardRoIHead):
             bbox_head.type = "CustomConvFCBBoxHead"
         self.bbox_head = MODELS.build(bbox_head)
 
-    def _bbox_forward_train(self, x, sampling_results, gt_bboxes, gt_labels, img_metas):
-        """Run forward function and calculate loss for box head in training."""
+    def loss(self, x: Tuple[Tensor], rpn_results_list: InstanceList, batch_data_samples: List[DetDataSample]) -> dict:
+        """Perform forward propagation and loss calculation of the detection roi on the features.
+
+        Args:
+            x (tuple[Tensor]): List of multi-level img features.
+            rpn_results_list (list[:obj:`InstanceData`]): List of region
+                proposals.
+            batch_data_samples (list[:obj:`DetDataSample`]): The batch
+                data samples. It usually includes information such
+                as `gt_instance` or `gt_panoptic_seg` or `gt_sem_seg`.
+
+        Returns:
+            dict[str, Tensor]: A dictionary of loss components
+        """
+        assert len(rpn_results_list) == len(batch_data_samples)
+        outputs = unpack_gt_instances(batch_data_samples)
+        batch_gt_instances, batch_gt_instances_ignore, batch_img_metas = outputs
+
+        # assign gts and sample proposals
+        num_imgs = len(batch_data_samples)
+        sampling_results = []
+        for i in range(num_imgs):
+            # rename rpn_results.bboxes to rpn_results.priors
+            rpn_results = rpn_results_list[i]
+            rpn_results.priors = rpn_results.pop("bboxes")
+
+            assign_result = self.bbox_assigner.assign(rpn_results, batch_gt_instances[i], batch_gt_instances_ignore[i])
+            sampling_result = self.bbox_sampler.sample(
+                assign_result, rpn_results, batch_gt_instances[i], feats=[lvl_feat[i][None] for lvl_feat in x]
+            )
+            sampling_results.append(sampling_result)
+
+        losses = dict()
+        # bbox head loss
+        if self.with_bbox:
+            bbox_results = self.bbox_loss(x, sampling_results, batch_img_metas)
+            losses.update(bbox_results["loss_bbox"])
+
+        # mask head forward and loss
+        if self.with_mask:
+            mask_results = self.mask_loss(x, sampling_results, bbox_results["bbox_feats"], batch_gt_instances)
+            losses.update(mask_results["loss_mask"])
+
+        return losses
+
+    def bbox_loss(self, x: Tuple[Tensor], sampling_results: List[SamplingResult], batch_img_metas: List[dict]) -> dict:
+        """Perform forward propagation and loss calculation of the bbox head on the features of the upstream network.
+
+        Args:
+            x (tuple[Tensor]): List of multi-level img features.
+            sampling_results (list["obj:`SamplingResult`]): Sampling results.
+            batch_img_metas (List[Dict]): Meta information of each image, e.g., image size, scaling factor, etc.
+
+        Returns:
+            dict[str, Tensor]: Usually returns a dictionary with keys:
+
+                - `cls_score` (Tensor): Classification scores.
+                - `bbox_pred` (Tensor): Box energies / deltas.
+                - `bbox_feats` (Tensor): Extract bbox RoI features.
+                - `loss_bbox` (dict): A dictionary of bbox loss components.
+        """
         rois = bbox2roi([res.bboxes for res in sampling_results])
         bbox_results = self._bbox_forward(x, rois)
 
-        labels, label_weights, bbox_targets, bbox_weights, valid_label_mask = self.bbox_head.get_targets(
-            sampling_results, gt_bboxes, gt_labels, img_metas, self.train_cfg
+        bbox_loss_and_target = self.bbox_head.loss_and_target(
+            cls_score=bbox_results["cls_score"],
+            bbox_pred=bbox_results["bbox_pred"],
+            rois=rois,
+            sampling_results=sampling_results,
+            rcnn_train_cfg=self.train_cfg,
+            batch_img_metas=batch_img_metas,
         )
-        loss_bbox = self.bbox_head.loss(
-            bbox_results["cls_score"],
-            bbox_results["bbox_pred"],
-            rois,
-            labels,
-            label_weights,
-            bbox_targets,
-            bbox_weights,
-            valid_label_mask=valid_label_mask,
-        )
-        bbox_results.update(loss_bbox=loss_bbox)
+        bbox_results.update(loss_bbox=bbox_loss_and_target["loss_bbox"])
+
         return bbox_results
 
 
@@ -59,23 +121,78 @@ class CustomRoIHead(StandardRoIHead):
 class CustomConvFCBBoxHead(Shared2FCBBoxHead, CrossDatasetDetectorHead):
     """CustomConvFCBBoxHead class for OTX."""
 
-    def get_targets(self, sampling_results, gt_bboxes, gt_labels, img_metas, rcnn_train_cfg, concat=True):
+    def loss_and_target(
+        self,
+        cls_score: Tensor,
+        bbox_pred: Tensor,
+        rois: Tensor,
+        sampling_results: List[SamplingResult],
+        rcnn_train_cfg: ConfigDict,
+        batch_img_metas: List[dict],
+        concat: bool = True,
+        reduction_override: Optional[str] = None,
+    ) -> dict:
+        """Calculate the loss based on the features extracted by the bbox head.
+
+        Args:
+            cls_score (Tensor): Classification prediction
+                results of all class, has shape
+                (batch_size * num_proposals_single_image, num_classes)
+            bbox_pred (Tensor): Regression prediction results,
+                has shape
+                (batch_size * num_proposals_single_image, 4), the last
+                dimension 4 represents [tl_x, tl_y, br_x, br_y].
+            rois (Tensor): RoIs with the shape
+                (batch_size * num_proposals_single_image, 5) where the first
+                column indicates batch id of each RoI.
+            sampling_results (List[obj:SamplingResult]): Assign results of
+                all images in a batch after sampling.
+            rcnn_train_cfg (obj:ConfigDict): `train_cfg` of RCNN.
+            batch_img_metas (List[Dict]): Meta information of each image, e.g., image size, scaling factor, etc.
+            concat (bool): Whether to concatenate the results of all
+                the images in a single batch. Defaults to True.
+            reduction_override (str, optional): The reduction
+                method used to override the original reduction
+                method of the loss. Options are "none",
+                "mean" and "sum". Defaults to None,
+
+        Returns:
+            dict: A dictionary of loss and targets components.
+                The targets are only used for cascade rcnn.
+        """
+
+        cls_reg_targets = self.get_targets(
+            sampling_results, rcnn_train_cfg, concat=concat, batch_img_metas=batch_img_metas
+        )
+        losses = self.loss(
+            cls_score,
+            bbox_pred,
+            rois,
+            *cls_reg_targets,
+            reduction_override=reduction_override,  # type: ignore[misc]
+        )
+
+        # cls_reg_targets is only for cascade rcnn
+        return dict(loss_bbox=losses, bbox_targets=cls_reg_targets)
+
+    def get_targets(
+        self,
+        sampling_results: List[SamplingResult],
+        rcnn_train_cfg: ConfigDict,
+        batch_img_metas: List[dict],
+        concat: bool = True,
+    ) -> tuple:
         """Calculate the ground truth for all samples in a batch according to the sampling_results.
 
         Almost the same as the implementation in bbox_head, we passed
         additional parameters pos_inds_list and neg_inds_list to
-        `_get_target_single` function.
+        `_get_targets_single` function.
 
         Args:
-            sampling_results (List[obj:SamplingResults]): Assign results of
+            sampling_results (List[obj:SamplingResult]): Assign results of
                 all images in a batch after sampling.
-            gt_bboxes (list[Tensor]): Gt_bboxes of all images in a batch,
-                each tensor has shape (num_gt, 4),  the last dimension 4
-                represents [tl_x, tl_y, br_x, br_y].
-            gt_labels (list[Tensor]): Gt_labels of all images in a batch,
-                each tensor has shape (num_gt,).
-            img_metas (list[dict]): Meta information of each image.
             rcnn_train_cfg (obj:ConfigDict): `train_cfg` of RCNN.
+            batch_img_metas (List[Dict]): Meta information of each image, e.g., image size, scaling factor, etc.
             concat (bool): Whether to concatenate the results of all
                 the images in a single batch.
 
@@ -83,39 +200,40 @@ class CustomConvFCBBoxHead(Shared2FCBBoxHead, CrossDatasetDetectorHead):
             Tuple[Tensor]: Ground truth for proposals in a single image.
             Containing the following list of Tensors:
 
-                - labels (list[Tensor],Tensor): Gt_labels for all
-                  proposals in a batch, each tensor in list has
-                  shape (num_proposals,) when `concat=False`, otherwise
-                  just a single tensor has shape (num_all_proposals,).
-                - label_weights (list[Tensor]): Labels_weights for
-                  all proposals in a batch, each tensor in list has
-                  shape (num_proposals,) when `concat=False`, otherwise
-                  just a single tensor has shape (num_all_proposals,).
-                - bbox_targets (list[Tensor],Tensor): Regression target
-                  for all proposals in a batch, each tensor in list
-                  has shape (num_proposals, 4) when `concat=False`,
-                  otherwise just a single tensor has shape
-                  (num_all_proposals, 4), the last dimension 4 represents
-                  [tl_x, tl_y, br_x, br_y].
-                - bbox_weights (list[tensor],Tensor): Regression weights for
-                  all proposals in a batch, each tensor in list has shape
-                  (num_proposals, 4) when `concat=False`, otherwise just a
-                  single tensor has shape (num_all_proposals, 4).
+            - labels (list[Tensor],Tensor): Gt_labels for all
+                proposals in a batch, each tensor in list has
+                shape (num_proposals,) when `concat=False`, otherwise
+                just a single tensor has shape (num_all_proposals,).
+            - label_weights (list[Tensor]): Labels_weights for
+                all proposals in a batch, each tensor in list has
+                shape (num_proposals,) when `concat=False`, otherwise
+                just a single tensor has shape (num_all_proposals,).
+            - bbox_targets (list[Tensor],Tensor): Regression target
+                for all proposals in a batch, each tensor in list
+                has shape (num_proposals, 4) when `concat=False`,
+                otherwise just a single tensor has shape
+                (num_all_proposals, 4), the last dimension 4 represents
+                [tl_x, tl_y, br_x, br_y].
+            - bbox_weights (list[tensor],Tensor): Regression weights for
+                all proposals in a batch, each tensor in list has shape
+                (num_proposals, 4) when `concat=False`, otherwise just a
+                single tensor has shape (num_all_proposals, 4).
         """
-        pos_bboxes_list = [res.pos_bboxes for res in sampling_results]
-        neg_bboxes_list = [res.neg_bboxes for res in sampling_results]
+        pos_priors_list = [res.pos_priors for res in sampling_results]
+        neg_priors_list = [res.neg_priors for res in sampling_results]
         pos_gt_bboxes_list = [res.pos_gt_bboxes for res in sampling_results]
         pos_gt_labels_list = [res.pos_gt_labels for res in sampling_results]
         labels, label_weights, bbox_targets, bbox_weights = multi_apply(
-            self._get_target_single,
-            pos_bboxes_list,
-            neg_bboxes_list,
+            self._get_targets_single,
+            pos_priors_list,
+            neg_priors_list,
             pos_gt_bboxes_list,
             pos_gt_labels_list,
             cfg=rcnn_train_cfg,
         )
-        valid_label_mask = self.get_valid_label_mask(img_metas=img_metas, all_labels=labels, use_bg=True)
-        valid_label_mask = [i.to(gt_bboxes[0].device) for i in valid_label_mask]
+
+        valid_label_mask = self.get_valid_label_mask(img_metas=batch_img_metas, all_labels=labels, use_bg=True)
+        valid_label_mask = [i.to(labels[0].device) for i in valid_label_mask]
 
         if concat:
             labels = torch.cat(labels, 0)
@@ -134,8 +252,8 @@ class CustomConvFCBBoxHead(Shared2FCBBoxHead, CrossDatasetDetectorHead):
         label_weights,
         bbox_targets,
         bbox_weights,
-        reduction_override=None,
         valid_label_mask=None,
+        reduction_override=None,
     ):
         """Loss function for CustomConvFCBBoxHead."""
         losses = dict()

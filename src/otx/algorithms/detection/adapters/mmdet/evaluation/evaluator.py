@@ -14,21 +14,26 @@
 # See the License for the specific language governing permissions
 # and limitations under the License.
 
+import copy
 import multiprocessing as mp
-from typing import Dict, List, Tuple, Union
+from collections import OrderedDict
+from typing import Dict, List, Sequence, Tuple, Union
 
-import mmcv
 import numpy as np
 import pycocotools.mask as mask_util
+import torch
 from mmdet.evaluation.functional.class_names import get_classes
 from mmdet.evaluation.functional.mean_ap import average_precision, eval_map
+from mmdet.evaluation.metrics import VOCMetric
+from mmdet.registry import METRICS
 from mmdet.structures.bbox import bbox_overlaps
+from mmdet.structures.mask import encode_mask_results
 from mmdet.structures.mask.structures import BitmapMasks, PolygonMasks
-from mmengine.logging import print_log
+from mmengine.logging import MMLogger, print_log
+from mmengine.utils.misc import is_str
 from terminaltables import AsciiTable
 
 from otx.api.entities.label import Domain
-from otx.api.utils.time_utils import timeit
 
 
 def print_map_summary(  # pylint: disable=too-many-locals,too-many-branches
@@ -74,7 +79,7 @@ def print_map_summary(  # pylint: disable=too-many-locals,too-many-branches
 
     if dataset is None:
         label_names = [str(i) for i in range(num_classes)]
-    elif mmcv.is_str(dataset):
+    elif is_str(dataset):
         label_names = get_classes(dataset)
     else:
         label_names = dataset
@@ -142,9 +147,9 @@ def mask_iou(det: Tuple[np.ndarray, BitmapMasks], gt_masks: PolygonMasks, iou_th
 
     """
     det_bboxes, det_masks = det
-    gt_bboxes = gt_masks.get_bboxes()
+    gt_bboxes = gt_masks.get_bboxes("hbox")
     img_h, img_w = gt_masks.height, gt_masks.width
-    ious = bbox_overlaps(det_bboxes, gt_bboxes, mode="iou")
+    ious = bbox_overlaps(torch.from_numpy(det_bboxes), gt_bboxes.tensor, mode="iou").numpy()
     ious[ious < iou_thr] = 0.0
     if not ious.any():
         return ious
@@ -152,7 +157,7 @@ def mask_iou(det: Tuple[np.ndarray, BitmapMasks], gt_masks: PolygonMasks, iou_th
     for coord in np.argwhere(ious):
         m, n = coord
         det_bbox, det_mask = sanitize_coordinates(det_bboxes[m], img_h, img_w), det_masks[m]
-        gt_bbox, gt_mask = sanitize_coordinates(gt_bboxes[n], img_h, img_w), gt_masks[n]
+        gt_bbox, gt_mask = sanitize_coordinates(gt_bboxes.numpy()[n], img_h, img_w), gt_masks[n]
         # add padding to det_mask and gt_mask so that they have the same size
         min_x1 = min(det_bbox[0], gt_bbox[0])
         min_y1 = min(det_bbox[1], gt_bbox[1])
@@ -226,25 +231,11 @@ def tpfpmiou_func(  # pylint: disable=too-many-locals
     return tp, fp, np.mean(gt_covered_iou)
 
 
-class Evaluator:
-    """OTX Evaluator for mAP and mIoU.
+@METRICS.register_module()
+class OTXDetMetric(VOCMetric):
+    """OTX Object Detection Evaluator for mAP and mIoU."""
 
-    Args:
-            annotation (list(dict)): ground truth annotation
-            domain (Domain): OTX algorithm domain
-            classes (list): list of classes
-            nproc (int, optional): number of processes. Defaults to 4.
-    """
-
-    def __init__(self, annotation: List[Dict], domain: Domain, classes: List[str], nproc=4):
-        self.domain = domain
-        self.classes = classes
-        self.num_classes = len(classes)
-        if domain != Domain.DETECTION:
-            self.annotation = self.get_gt_instance_masks(annotation)
-        else:
-            self.annotation = annotation
-        self.nproc = nproc
+    nproc = 4
 
     def get_gt_instance_masks(self, annotation: List[Dict]):
         """Format ground truth instance mask annotation.
@@ -292,27 +283,30 @@ class Evaluator:
                 cls_dets.append((det_bboxes, det_masks))
         return cls_dets, cls_scores
 
-    def evaluate_mask(self, results, logger, iou_thr):
+    def evaluate_mask(self, gts, preds, logger, iou_thr):
         """Evaluate mask results.
 
         Args:
-            results (list): list of prediction
+            preds(list): list of prediction
+            gts (list): list of ground truth
             logger (Logger): OTX logger
             iou_thr (float): IoU threshold
 
         Returns:
             metric: mAP and mIoU metric
         """
-        assert len(results) == len(self.annotation[0]), "number of images should be equal!"
-        num_imgs = len(results)
+        assert len(gts) == len(preds), "number of images should be equal!"
+        num_imgs = len(gts)
         eval_results = []
+
+        gts = self.get_gt_masks(gts)
 
         ctx = mp.get_context("spawn")
         with ctx.Pool(self.nproc) as p:
-            for class_id in range(self.num_classes):
+            for class_id in range(len(self.dataset_meta["classes"])):
                 # get gt and det bboxes of this class
-                cls_dets, cls_scores = self.get_mask_det_results(results, class_id)
-                cls_gts = self.annotation[class_id]
+                cls_dets, cls_scores = self.get_mask_det_results(preds, class_id)
+                cls_gts = gts[class_id]
 
                 # compute tp and fp for each image with multiple processes
                 tpfpmiou = p.starmap(
@@ -358,30 +352,108 @@ class Evaluator:
         metrics["mAP"] = mean_ap
         metrics["mIoU"] = mean_miou
 
-        print_map_summary(mean_ap, eval_results, self.classes, None, logger=logger)
+        print_map_summary(mean_ap, eval_results, self.dataset_meta["classes"], None, logger=logger)
 
         return metrics["mAP"], eval_results
 
-    @timeit
-    def evaluate(self, results, logger, iou_thr, scale_ranges):
-        """Evaluate detection results.
+    def get_gt_masks(self, gts):
+        """Return masks information from gt."""
+        gt_masks = []
+        for idx in range(len(self.dataset_meta["classes"])):
+            gt_per_classes = []
+            for gt in gts:
+                gt_mask = gt["masks"][gt["labels"] == idx]
+                if len(gt_mask) == 0:
+                    gt_mask = []
+                gt_per_classes.append(gt_mask)
+            gt_masks.append(gt_per_classes)
+        return gt_masks
+
+    def compute_metrics(  # pylint: disable=too-many-branches
+        self,
+        results,
+    ):
+        """Evaluate the dataset.
 
         Args:
-            results (list): list of prediction
-            logger (Logger): OTX logger
-            iou_thr (float): IoU threshold
-            scale_ranges (list): scale range for object detection evaluation
-
-        Returns:
-            metric: mAP and mIoU metric
+            results (list): Testing results of the dataset.
+            metric (str | list[str]): Metrics to be evaluated.
+            logger (logging.Logger | None | str): Logger used for printing
+                related information during evaluation. Default: None.
+            proposal_nums (Sequence[int]): Proposal number used for evaluating
+                recalls, such as recall@100, recall@1000.
+                Default: (100, 300, 1000).
+            iou_thr (float | list[float]): IoU threshold. Default: 0.5.
+            scale_ranges (list[tuple] | None): Scale ranges for evaluating mAP.
+                Default: None.
         """
-        if self.domain == Domain.DETECTION:
-            return eval_map(
-                results,
-                self.annotation,
-                scale_ranges=scale_ranges,
-                iou_thr=iou_thr,
-                dataset=self.classes,
-                logger=logger,
+        logger: MMLogger = MMLogger.get_current_instance()
+        eval_results = OrderedDict()
+        gts, preds = zip(*results)
+        mean_aps = []
+        for iou_thr in self.iou_thrs:  # pylint: disable=redefined-argument-from-local
+            print_log(f'\n{"-" * 15}iou_thr: {iou_thr}{"-" * 15}')
+            if self.dataset_meta["domain"] == Domain.DETECTION:
+                mean_ap, _ = eval_map(
+                    preds,
+                    gts,
+                    scale_ranges=self.scale_ranges,
+                    iou_thr=iou_thr,
+                    dataset=self.dataset_meta["classes"],
+                    logger=logger,
+                    eval_mode=self.eval_mode,
+                    use_legacy_coordinate=True,
+                )
+            else:
+                mean_ap, _ = self.evaluate_mask(gts, preds, logger, iou_thr)
+            mean_aps.append(mean_ap)
+            eval_results[f"AP{int(iou_thr * 100):02d}"] = round(mean_ap, 3)
+        eval_results["mAP"] = sum(mean_aps) / len(mean_aps)
+        return eval_results
+
+    def process(self, data_batch: dict, data_samples: Sequence[dict]) -> None:
+        """Process one batch of data samples and predictions.
+
+        The processed results should be stored in ``self.results``, which will be used to
+        compute the metrics when all batches have been processed.
+
+        Args:
+            data_batch (dict): A batch of data from the dataloader.
+            data_samples (Sequence[dict]): A batch of data samples that
+                contain annotations and predictions.
+        """
+        for data_sample in data_samples:
+            gt = copy.deepcopy(data_sample)
+            # TODO: Need to refactor to support LoadAnnotations
+            gt_instances = gt["gt_instances"]
+            gt_ignore_instances = gt["ignored_instances"]
+            ann = dict(
+                labels=gt_instances["labels"].cpu().numpy(),
+                bboxes=gt_instances["bboxes"].cpu().numpy(),
+                bboxes_ignore=gt_ignore_instances["bboxes"].cpu().numpy(),
+                labels_ignore=gt_ignore_instances["labels"].cpu().numpy(),
             )
-        return self.evaluate_mask(results, logger, iou_thr)
+
+            pred = data_sample["pred_instances"]
+            pred_bboxes = pred["bboxes"].cpu().numpy()
+            pred_scores = pred["scores"].cpu().numpy()
+            pred_labels = pred["labels"].cpu().numpy()
+
+            if self.dataset_meta["domain"] == Domain.INSTANCE_SEGMENTATION:
+                ann["masks"] = gt_instances["masks"]
+                ann["masks_ignore"] = gt_ignore_instances["masks"]
+                pred_masks = np.array([encode_mask_results(mask)[0] for mask in pred["masks"]])
+
+            dets = []
+            masks = []
+            for label in range(len(self.dataset_meta["classes"])):
+                index = np.where(pred_labels == label)[0]
+                pred_bbox_scores = np.hstack([pred_bboxes[index], pred_scores[index].reshape((-1, 1))])
+                dets.append(pred_bbox_scores)
+                if self.dataset_meta["domain"] == Domain.INSTANCE_SEGMENTATION:
+                    masks.append(pred_masks[index].tolist())
+
+            if self.dataset_meta["domain"] == Domain.INSTANCE_SEGMENTATION:
+                self.results.append((ann, (dets, masks)))
+            else:
+                self.results.append((ann, dets))

@@ -1,5 +1,4 @@
 model:
-  pretrained: torchvision://resnet18
   backbone:
     type: ResNet
     depth: 18

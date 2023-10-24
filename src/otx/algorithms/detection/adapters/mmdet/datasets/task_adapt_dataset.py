@@ -39,7 +39,7 @@ class TaskAdaptEvalDataset:
                 self.CLASSES, self.dataset.coco.cats
             )
 
-        self.metainfo = {"classes": self.CLASSES}
+        self.metainfo = self.dataset.metainfo
 
     def __getitem__(self, idx):
         """Get item from TaskAdaptEvalDataset."""

@@ -112,7 +112,7 @@ test_dataloader = dict(
 )
 
 val_evaluator = dict(
-    type="VOCMetric",
+    type="OTXDetMetric",
     metric="mAP",
 )
 test_evaluator = val_evaluator

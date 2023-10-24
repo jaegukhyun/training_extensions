@@ -112,7 +112,7 @@ def check_run(cmd, **kwargs):
     assert rc == 0, stderr
 
 
-def otx_train_testing(template, root, otx_dir, args, deterministic=True):
+def otx_train_testing(template, root, otx_dir, args, deterministic=False):
     template_work_dir = get_template_dir(template, root)
     command_line = ["otx", "train", template.model_template_path]
     for arg in [

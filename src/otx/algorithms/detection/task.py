@@ -229,7 +229,7 @@ class OTXDetectionTask(OTXTask, ABC):
         self._is_training = False
         val_dataset = dataset.get_subset(Subset.VALIDATION)
         val_dataset.purpose = DatasetPurpose.INFERENCE
-        val_preds, val_map = self._infer_model(val_dataset, InferenceParameters(is_evaluation=True))
+        val_preds = self._infer_model(val_dataset, InferenceParameters(is_evaluation=True))
 
         MemCacheHandlerSingleton.delete()
 
@@ -268,7 +268,7 @@ class OTXDetectionTask(OTXTask, ABC):
         # compose performance statistics
         # TODO[EUGENE]: HOW TO ADD A MAE CURVE FOR TaskType.COUNTING?
         performance = metric.get_performance()
-        performance.dashboard_metrics.extend(self._generate_training_metrics(self._learning_curves, val_map))
+        performance.dashboard_metrics.extend(self._generate_training_metrics(self._learning_curves))
         logger.info(f"Final model performance: {str(performance)}")
         # save resulting model
         self.save_model(output_model)
@@ -299,7 +299,7 @@ class OTXDetectionTask(OTXTask, ABC):
         self._time_monitor = InferenceProgressCallback(len(dataset), update_progress_callback)
 
         dataset.purpose = DatasetPurpose.INFERENCE
-        prediction_results, _ = self._infer_model(dataset, inference_parameters)
+        prediction_results = self._infer_model(dataset, inference_parameters)
         self._add_predictions_to_dataset(
             prediction_results,
             dataset,
@@ -541,7 +541,7 @@ class OTXDetectionTask(OTXTask, ABC):
             )
 
     @staticmethod
-    def _generate_training_metrics(learning_curves, scores) -> Iterable[MetricsGroup[Any, Any]]:
+    def _generate_training_metrics(learning_curves) -> Iterable[MetricsGroup[Any, Any]]:
         """Get Training metrics (epochs & scores).
 
         Parses the mmdetection logs to get metrics from the latest training run
@@ -550,6 +550,7 @@ class OTXDetectionTask(OTXTask, ABC):
         output: List[MetricsGroup] = []
 
         # Learning curves.
+        best_mAP = -1
         for key, curve in learning_curves.items():
             len_x, len_y = len(curve.x), len(curve.y)
             if len_x != len_y:
@@ -562,18 +563,19 @@ class OTXDetectionTask(OTXTask, ABC):
                 ys=np.nan_to_num(curve.y).tolist(),
                 name=key,
             )
+            best_mAP = max(curve.y)
             visualization_info = LineChartInfo(name=key, x_axis_label="Epoch", y_axis_label=key)
             output.append(LineMetricsGroup(metrics=[metric_curve], visualization_info=visualization_info))
 
         # Final mAP value on the validation set.
         output.append(
             BarMetricsGroup(
-                metrics=[ScoreMetric(value=scores, name="mAP")],
+                metrics=[ScoreMetric(value=best_mAP, name="mAP")],
                 visualization_info=BarChartInfo("Validation score", visualization_type=VisualizationType.RADIAL_BAR),
             )
         )
 
-        return output
+        return output, best_mAP
 
     def save_model(self, output_model: ModelEntity):
         """Save best model weights in DetectionTrainTask."""

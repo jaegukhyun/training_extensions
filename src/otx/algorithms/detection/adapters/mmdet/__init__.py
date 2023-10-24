@@ -6,5 +6,6 @@
 
 from . import models
 from .datasets.dataset import OTXDetDataset
+from .evaluation import OTXDetMetric
 
-__all__ = ["OTXDetDataset", "models"]
+__all__ = ["OTXDetDataset", "models", "OTXDetMetric"]

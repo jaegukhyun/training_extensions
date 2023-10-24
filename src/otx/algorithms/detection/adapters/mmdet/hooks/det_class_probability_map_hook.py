@@ -8,7 +8,9 @@ from typing import List, Optional, Tuple, Union
 import numpy as np
 import torch
 import torch.nn.functional as F
+from mmdet.structures import DetDataSample
 from mmdet.structures.bbox import bbox2roi
+from torch import Tensor
 
 from otx.algorithms.common.adapters.mmcv.hooks.recording_forward_hook import (
     BaseRecordingForwardHook,
@@ -147,14 +149,14 @@ class MaskRCNNRecordingForwardHook(BaseRecordingForwardHook):
     def __init__(
         self,
         module: torch.nn.Module,
-        input_img_shape: Tuple[int, int],
+        data_sample: DetDataSample,
         saliency_map_shape: Tuple[int, int] = (224, 224),
         max_detections_per_img: int = 300,
         normalize: bool = True,
     ) -> None:
         super().__init__(module)
         self._neck = module.neck if module.with_neck else None
-        self._input_img_shape = input_img_shape
+        self._data_sample = data_sample
         self._saliency_map_shape = saliency_map_shape
         self._max_detections_per_img = max_detections_per_img
         self._norm_saliency_maps = normalize
@@ -181,21 +183,20 @@ class MaskRCNNRecordingForwardHook(BaseRecordingForwardHook):
 
     def _get_detections(self, x: torch.Tensor) -> Tuple[List[torch.Tensor], List[torch.Tensor]]:
         batch_size = x[0].shape[0]
-        img_metas = [
-            {
-                "scale_factor": [1, 1, 1, 1],  # dummy scale_factor, not used
-                "img_shape": self._input_img_shape,
-            }
-        ]
-        img_metas *= batch_size
-        proposals = self._module.rpn_head.simple_test_rpn(x, img_metas)
+        dummy_data_samples = [self._data_sample] * batch_size
+
+        proposals = self._module.rpn_head.predict(x, dummy_data_samples, rescale=False)
         test_cfg = copy.deepcopy(self._module.roi_head.test_cfg)
         test_cfg["max_per_img"] = self._max_detections_per_img
         test_cfg["nms"]["iou_threshold"] = 1
         test_cfg["nms"]["max_num"] = self._max_detections_per_img
-        det_bboxes, det_labels = self._module.roi_head.simple_test_bboxes(
-            x, img_metas, proposals, test_cfg, rescale=False
-        )
+        result_lists = self._module.roi_head.predict(x, proposals, dummy_data_samples, rescale=False)
+
+        det_bboxes = []
+        det_labels = []
+        for result in result_lists:
+            det_bboxes.append(result.bboxes)
+            det_labels.append(result.labels)
         return det_bboxes, det_labels
 
     def _get_saliency_maps_from_mask_predictions(
@@ -204,17 +205,22 @@ class MaskRCNNRecordingForwardHook(BaseRecordingForwardHook):
         _bboxes = [det_bboxes[i][:, :4] for i in range(len(det_bboxes))]
         mask_rois = bbox2roi(_bboxes)
         mask_results = self._module.roi_head._mask_forward(x, mask_rois)
-        mask_pred = mask_results["mask_pred"]
+        mask_pred = mask_results["mask_preds"]
         num_mask_roi_per_img = [len(det_bbox) for det_bbox in det_bboxes]
         mask_preds = mask_pred.split(num_mask_roi_per_img, 0)
 
         batch_size = x[0].shape[0]
 
-        scale_x = self._input_img_shape[1] / self._saliency_map_shape[1]
-        scale_y = self._input_img_shape[0] / self._saliency_map_shape[0]
-        scale_factor = torch.FloatTensor((scale_x, scale_y, scale_x, scale_y))
+        scale_x = self._data_sample.img_shape[1] / self._saliency_map_shape[1]
+        scale_y = self._data_sample.img_shape[0] / self._saliency_map_shape[0]
+        scale_factor = torch.FloatTensor((scale_x, scale_y)).to(_bboxes[0].device)
         test_cfg = self._module.roi_head.test_cfg.copy()
         test_cfg["mask_thr_binary"] = -1
+
+        img_meta = {
+            "scale_factor": scale_factor,
+            "ori_shape": self._saliency_map_shape,
+        }
 
         saliency_maps = [[None for _ in range(self._module.roi_head.mask_head.num_classes)] for _ in range(batch_size)]
 
@@ -222,18 +228,20 @@ class MaskRCNNRecordingForwardHook(BaseRecordingForwardHook):
             if det_bboxes[i].shape[0] == 0:
                 continue
             else:
-                segm_result = self._module.roi_head.mask_head.get_seg_masks(
+                masks = self._module.roi_head.mask_head._predict_by_feat_single(
                     mask_preds[i],
                     _bboxes[i],
                     det_labels[i],
+                    img_meta,
                     test_cfg,
-                    self._saliency_map_shape,
-                    scale_factor=scale_factor,
                     rescale=True,
                 )
-                for class_id, segm_res in enumerate(segm_result):
-                    if segm_res:
-                        saliency_maps[i][class_id] = np.mean(np.array(segm_res), axis=0)
+                cls_segms: List[List[Tensor]] = [[] for _ in range(self._module.roi_head.mask_head.num_classes)]
+                for j in range(len(mask_preds[i])):
+                    cls_segms[det_labels[i][j]].append(masks[j][0])
+                for class_id, cls_segm in enumerate(cls_segms):
+                    if cls_segm:
+                        saliency_maps[i][class_id] = np.mean(np.array(cls_segm), axis=0)
         return saliency_maps
 
     @staticmethod

@@ -6,10 +6,9 @@
 import functools
 import inspect
 from collections import defaultdict
-from typing import Dict, List, Tuple
+from typing import Any, Dict, List, Tuple
 
 import torch
-from mmdet.models.dense_heads.base_dense_head import BaseDenseHead
 from mmdet.models.losses.utils import weight_reduce_loss
 from mmdet.models.utils.misc import images_to_levels, multi_apply
 from mmdet.registry import MODELS
@@ -26,12 +25,12 @@ from otx.algorithms.detection.adapters.mmdet.models.loss_dyns import (
 
 
 @MODELS.register_module()
-class CrossDatasetDetectorHead(BaseDenseHead):
+class CrossDatasetDetectorHead:
     """Head class for Ignore labels."""
 
     def get_atss_targets(
         self,
-        anchor_list: List[List[Tensor]],
+        anchor_list: List[Any],
         valid_flag_list: List[List[Tensor]],
         batch_gt_instances: InstanceList,
         batch_img_metas: List[dict],
@@ -70,7 +69,7 @@ class CrossDatasetDetectorHead(BaseDenseHead):
             neg_inds_list,
             sampling_results_list,
         ) = multi_apply(
-            self._get_targets_single,
+            self._get_targets_single,  # type: ignore[attr-defined]
             anchor_list,
             valid_flag_list,
             num_level_anchors_list,

@@ -26,6 +26,13 @@ task = "instance-segmentation"
 
 model = dict(
     type="CustomMaskRCNN",  # Use CustomMaskRCNN for Incremental Learning
+    data_preprocessor=dict(
+        type="DetDataPreprocessor",
+        mean=[123.675, 116.28, 103.53],
+        std=[58.395, 57.12, 57.375],
+        bgr_to_rgb=True,
+        pad_size_divisor=32,
+    ),
     neck=dict(
         type="FPN",
         in_channels=[256, 512, 1024, 2048],
@@ -159,5 +166,4 @@ load_from = "https://download.openmmlab.com/mmdetection/\
 v2.0/mask_rcnn/mask_rcnn_r50_fpn_mstrain-poly_3x_coco/\
 mask_rcnn_r50_fpn_mstrain-poly_3x_coco_20210524_201154-21b550bb.pth"
 
-evaluation = dict(interval=1, metric="mAP", save_best="mAP", iou_thr=[0.5])
 ignore = True

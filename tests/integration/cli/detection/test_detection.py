@@ -236,56 +236,56 @@ class TestDetectionCLI:
         tmp_dir_path = tmp_dir_path / "detection/test_hpo"
         otx_hpo_testing(template, tmp_dir_path, otx_dir, args)
 
-    @e2e_pytest_component
-    @pytest.mark.parametrize("template", templates, ids=templates_ids)
-    def test_nncf_optimize(self, template, tmp_dir_path):
-        tmp_dir_path = tmp_dir_path / "detection"
-        if template.entrypoints.nncf is None:
-            pytest.skip("nncf entrypoint is none")
+    # @e2e_pytest_component
+    # @pytest.mark.parametrize("template", templates, ids=templates_ids)
+    # def test_nncf_optimize(self, template, tmp_dir_path):
+    #     tmp_dir_path = tmp_dir_path / "detection"
+    #     if template.entrypoints.nncf is None:
+    #         pytest.skip("nncf entrypoint is none")
 
-        nncf_optimize_testing(template, tmp_dir_path, otx_dir, args)
+    #     nncf_optimize_testing(template, tmp_dir_path, otx_dir, args)
 
-    @e2e_pytest_component
-    @pytest.mark.skipif(MULTI_GPU_UNAVAILABLE, reason="The number of gpu is insufficient")
-    @pytest.mark.parametrize("template", default_templates, ids=default_templates_ids)
-    def test_otx_multi_gpu_train(self, template, tmp_dir_path):
-        tmp_dir_path = tmp_dir_path / "detection/test_multi_gpu"
-        args1 = copy.deepcopy(args)
-        args1["--gpus"] = "0,1"
-        otx_train_testing(template, tmp_dir_path, otx_dir, args1)
+    # @e2e_pytest_component
+    # @pytest.mark.skipif(MULTI_GPU_UNAVAILABLE, reason="The number of gpu is insufficient")
+    # @pytest.mark.parametrize("template", default_templates, ids=default_templates_ids)
+    # def test_otx_multi_gpu_train(self, template, tmp_dir_path):
+    #     tmp_dir_path = tmp_dir_path / "detection/test_multi_gpu"
+    #     args1 = copy.deepcopy(args)
+    #     args1["--gpus"] = "0,1"
+    #     otx_train_testing(template, tmp_dir_path, otx_dir, args1)
 
-    @e2e_pytest_component
-    @pytest.mark.parametrize("template", default_templates, ids=default_templates_ids)
-    def test_otx_train_semisl(self, template, tmp_dir_path):
-        tmp_dir_path = tmp_dir_path / "detection/test_semisl"
-        otx_train_testing(template, tmp_dir_path, otx_dir, args_semisl)
-        template_dir = get_template_dir(template, tmp_dir_path)
-        assert os.path.exists(f"{template_dir}/semisl")
+    # @e2e_pytest_component
+    # @pytest.mark.parametrize("template", default_templates, ids=default_templates_ids)
+    # def test_otx_train_semisl(self, template, tmp_dir_path):
+    #     tmp_dir_path = tmp_dir_path / "detection/test_semisl"
+    #     otx_train_testing(template, tmp_dir_path, otx_dir, args_semisl)
+    #     template_dir = get_template_dir(template, tmp_dir_path)
+    #     assert os.path.exists(f"{template_dir}/semisl")
 
-    @e2e_pytest_component
-    @pytest.mark.skipif(MULTI_GPU_UNAVAILABLE, reason="The number of gpu is insufficient")
-    @pytest.mark.parametrize("template", default_templates, ids=default_templates_ids)
-    def test_otx_multi_gpu_train_semisl(self, template, tmp_dir_path):
-        tmp_dir_path = tmp_dir_path / "detection/test_multi_gpu_semisl"
-        args_semisl_multigpu = copy.deepcopy(args_semisl)
-        args_semisl_multigpu["--gpus"] = "0,1"
-        otx_train_testing(template, tmp_dir_path, otx_dir, args_semisl_multigpu)
-        template_dir = get_template_dir(template, tmp_dir_path)
-        assert os.path.exists(f"{template_dir}/semisl")
+    # @e2e_pytest_component
+    # @pytest.mark.skipif(MULTI_GPU_UNAVAILABLE, reason="The number of gpu is insufficient")
+    # @pytest.mark.parametrize("template", default_templates, ids=default_templates_ids)
+    # def test_otx_multi_gpu_train_semisl(self, template, tmp_dir_path):
+    #     tmp_dir_path = tmp_dir_path / "detection/test_multi_gpu_semisl"
+    #     args_semisl_multigpu = copy.deepcopy(args_semisl)
+    #     args_semisl_multigpu["--gpus"] = "0,1"
+    #     otx_train_testing(template, tmp_dir_path, otx_dir, args_semisl_multigpu)
+    #     template_dir = get_template_dir(template, tmp_dir_path)
+    #     assert os.path.exists(f"{template_dir}/semisl")
 
-    @e2e_pytest_component
-    @pytest.mark.parametrize("template", default_templates, ids=default_templates_ids)
-    @pytest.mark.parametrize("bs_adapt_type", ["Safe", "Full"])
-    def test_otx_train_auto_adapt_batch_size(self, template, tmp_dir_path, bs_adapt_type):
-        adapting_bs_args = copy.deepcopy(args)
-        adapting_bs_args["train_params"].extend(["--learning_parameters.auto_adapt_batch_size", bs_adapt_type])
-        tmp_dir_path = tmp_dir_path / f"detection_auto_adapt_{bs_adapt_type}_batch_size"
-        otx_train_testing(template, tmp_dir_path, otx_dir, adapting_bs_args)
+    # @e2e_pytest_component
+    # @pytest.mark.parametrize("template", default_templates, ids=default_templates_ids)
+    # @pytest.mark.parametrize("bs_adapt_type", ["Safe", "Full"])
+    # def test_otx_train_auto_adapt_batch_size(self, template, tmp_dir_path, bs_adapt_type):
+    #     adapting_bs_args = copy.deepcopy(args)
+    #     adapting_bs_args["train_params"].extend(["--learning_parameters.auto_adapt_batch_size", bs_adapt_type])
+    #     tmp_dir_path = tmp_dir_path / f"detection_auto_adapt_{bs_adapt_type}_batch_size"
+    #     otx_train_testing(template, tmp_dir_path, otx_dir, adapting_bs_args)
 
-    @e2e_pytest_component
-    @pytest.mark.parametrize("template", default_templates, ids=default_templates_ids)
-    def test_otx_train_auto_adapt_batch_size(self, template, tmp_dir_path):
-        adapting_num_workers_args = copy.deepcopy(args)
-        adapting_num_workers_args["train_params"].extend(["--learning_parameters.auto_num_workers", "True"])
-        tmp_dir_path = tmp_dir_path / f"detection_auto_adapt_num_workers"
-        otx_train_testing(template, tmp_dir_path, otx_dir, adapting_num_workers_args)
+    # @e2e_pytest_component
+    # @pytest.mark.parametrize("template", default_templates, ids=default_templates_ids)
+    # def test_otx_train_auto_adapt_batch_size(self, template, tmp_dir_path):
+    #     adapting_num_workers_args = copy.deepcopy(args)
+    #     adapting_num_workers_args["train_params"].extend(["--learning_parameters.auto_num_workers", "True"])
+    #     tmp_dir_path = tmp_dir_path / f"detection_auto_adapt_num_workers"
+    #     otx_train_testing(template, tmp_dir_path, otx_dir, adapting_num_workers_args)

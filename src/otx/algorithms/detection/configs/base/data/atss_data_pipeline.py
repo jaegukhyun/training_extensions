@@ -41,7 +41,7 @@ train_pipeline = [
 val_pipeline = [
     dict(
         type="LoadResizeDataFromOTXDataset",
-        load_ann_cfg=dict(type="LoadAnnotationFromOTXDataset", with_bbox=False),
+        load_ann_cfg=dict(type="LoadAnnotationFromOTXDataset", with_bbox=True),
         resize_cfg=dict(type="Resize", scale=(992, 736), keep_ratio=False),
         eval_mode=True,
         enable_memcache=True,
@@ -87,7 +87,7 @@ test_dataloader = dict(
 )
 
 val_evaluator = dict(
-    type="VOCMetric",
+    type="OTXDetMetric",
     metric="mAP",
 )
 test_evaluator = val_evaluator

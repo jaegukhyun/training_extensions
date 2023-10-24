@@ -9,12 +9,13 @@ import os
 from contextlib import nullcontext
 from copy import deepcopy
 from functools import partial
-from typing import Any, Dict, Optional, Union
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 import numpy as np
 import torch
 from mmdet.models.detectors import DETR, TwoStageDetector
 from mmdet.registry import DATASETS
+from mmdet.structures.mask import encode_mask_results
 from mmdet.utils import collect_env
 from mmengine.config import Config, ConfigDict
 from mmengine.registry import DefaultScope
@@ -303,10 +304,10 @@ class MMDetectionTask(OTXDetectionTask):
         else:
             raw_model = feature_model
             if isinstance(raw_model, TwoStageDetector):
-                height, width, _ = mm_dataset[0]["img_metas"][0].data["img_shape"]
+                height, width = mm_dataset[0]["data_samples"].img_shape
                 saliency_hook = MaskRCNNRecordingForwardHook(
                     feature_model,
-                    input_img_shape=(height, width),
+                    data_sample=mm_dataset[0]["data_samples"],
                     normalize=not isinstance(mm_dataset, ImageTilingDataset),
                 )
             elif isinstance(raw_model, DETR):
@@ -323,7 +324,7 @@ class MMDetectionTask(OTXDetectionTask):
         else:
             feature_vector_hook = FeatureVectorHook(feature_model)
 
-        eval_predictions = []
+        eval_predictions: Union[List, List[Union[List, Tuple[List, List]]]] = []
         # pylint: disable=no-member
         with feature_vector_hook:
             with saliency_hook:
@@ -336,12 +337,22 @@ class MMDetectionTask(OTXDetectionTask):
                             pred_scores = pred["scores"].cpu().numpy()
                             pred_labels = pred["labels"].cpu().numpy()
 
+                            if "masks" in pred:
+                                pred_masks = np.array([encode_mask_results(mask)[0] for mask in pred["masks"]])
+
                             dets = []
+                            masks = []
                             for label in range(len(target_classes)):
                                 index = np.where(pred_labels == label)[0]
                                 pred_bbox_scores = np.hstack([pred_bboxes[index], pred_scores[index].reshape((-1, 1))])
+
                                 dets.append(pred_bbox_scores)
-                            eval_predictions.append(dets)
+                                if "masks" in pred:
+                                    masks.append(pred_masks[index])
+                            if "masks" in pred:
+                                eval_predictions.append((dets, masks))
+                            else:
+                                eval_predictions.append(dets)
                 if isinstance(feature_vector_hook, nullcontext):
                     feature_vectors = [None] * len(mm_dataset)
                 else:
@@ -360,15 +371,6 @@ class MMDetectionTask(OTXDetectionTask):
             feature_vectors = mm_dataset.merge_vectors(feature_vectors, dump_features)
             saliency_maps = mm_dataset.merge_maps(saliency_maps, dump_saliency_map)
 
-        # This part need to be removed, it is leaved for debugging purpose
-        metric = None
-        if inference_parameters and inference_parameters.is_evaluation:
-            if isinstance(mm_dataset, ImageTilingDataset):
-                metric = mm_dataset.dataset.evaluate(eval_predictions, **cfg.evaluation)
-            else:
-                metric = mm_dataset.evaluate(eval_predictions, metric="mAP")
-            metric = metric["mAP"]
-
         assert len(eval_predictions) == len(feature_vectors) == len(saliency_maps), (
             "Number of elements should be the same, however, number of outputs are "
             f"{len(eval_predictions)}, {len(feature_vectors)}, and {len(saliency_maps)}"
@@ -377,7 +379,6 @@ class MMDetectionTask(OTXDetectionTask):
             outputs=dict(
                 classes=target_classes,
                 detections=eval_predictions,
-                metric=metric,
                 feature_vectors=feature_vectors,
                 saliency_maps=saliency_maps,
             )
@@ -385,7 +386,6 @@ class MMDetectionTask(OTXDetectionTask):
 
         # TODO: InferenceProgressCallback register
         output = results["outputs"]
-        metric = output["metric"]
         predictions = output["detections"]
         assert len(output["detections"]) == len(output["feature_vectors"]) == len(output["saliency_maps"]), (
             "Number of elements should be the same, however, number of outputs are "
@@ -397,7 +397,7 @@ class MMDetectionTask(OTXDetectionTask):
         # when the phase is inference.
         for item in dataset:
             item.subset = original_subset
-        return prediction_results, metric
+        return prediction_results
 
     # pylint: disable=too-many-statements
     def _export_model(
