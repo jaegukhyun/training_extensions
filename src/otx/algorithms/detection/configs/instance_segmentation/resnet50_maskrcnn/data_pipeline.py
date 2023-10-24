@@ -4,4 +4,4 @@
 # SPDX-License-Identifier: Apache-2.0
 
 
-_base_ = ["../../base/data/iseg_resnet_data_pipeline.py"]
+_base_ = ["../../base/data/iseg_data_pipeline.py"]

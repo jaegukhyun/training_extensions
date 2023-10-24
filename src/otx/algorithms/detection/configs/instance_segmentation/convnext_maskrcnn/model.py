@@ -14,8 +14,15 @@ task = "instance-segmentation"
 
 model = dict(
     type="CustomMaskRCNN",
+    data_preprocessor=dict(
+        type="DetDataPreprocessor",
+        mean=[123.675, 116.28, 103.53],
+        std=[58.395, 57.12, 57.375],
+        bgr_to_rgb=True,
+        pad_size_divisor=32,
+    ),
     backbone=dict(
-        type="mmcls.ConvNeXt",
+        type="mmpretrain.ConvNeXt",
         arch="tiny",
         out_indices=[0, 1, 2, 3],
         drop_path_rate=0.4,
@@ -126,8 +133,7 @@ repositories/openvino_training_extensions/\
 models/instance_segmentation/\
 mask_rcnn_convnext-t_p4_w7_fpn_fp16.pth"
 
-evaluation = dict(interval=1, metric="mAP", save_best="mAP", iou_thr=[0.5])
 ignore = True
 
-custom_imports = dict(imports=["mmcls.models"], allow_failed_imports=False)
+custom_imports = dict(imports=["mmpretrain.models"], allow_failed_imports=False)
 fp16 = dict(loss_scale=dict(init_scale=512.0))

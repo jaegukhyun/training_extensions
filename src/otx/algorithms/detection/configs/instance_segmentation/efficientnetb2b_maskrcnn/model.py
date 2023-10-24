@@ -1,18 +1,7 @@
 """Model configuration of EfficientNetB2B-MaskRCNN model for Instance-Seg Task."""
 
-# Copyright (C) 2022 Intel Corporation
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-# http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing,
-# software distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions
-# and limitations under the License.
+# Copyright (C) 2023 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
 
 # pylint: disable=invalid-name
 
@@ -26,6 +15,13 @@ task = "instance-segmentation"
 
 model = dict(
     type="CustomMaskRCNN",  # Use CustomMaskRCNN for Incremental Learning
+    data_preprocessor=dict(
+        type="DetDataPreprocessor",
+        mean=[103.53, 116.28, 123.675],
+        std=[1.0, 1.0, 1.0],
+        bgr_to_rgb=True,
+        pad_size_divisor=32,
+    ),
     neck=dict(type="FPN", in_channels=[24, 48, 120, 352], out_channels=80, num_outs=5),
     rpn_head=dict(
         type="RPNHead",
@@ -126,6 +122,5 @@ load_from = "https://storage.openvinotoolkit.org/repositories/\
 openvino_training_extensions/models/instance_segmentation/\
 v2/efficientnet_b2b-mask_rcnn-576x576.pth"
 
-evaluation = dict(interval=1, metric="mAP", save_best="mAP", iou_thr=[0.5])
 fp16 = dict(loss_scale=512.0)
 ignore = True

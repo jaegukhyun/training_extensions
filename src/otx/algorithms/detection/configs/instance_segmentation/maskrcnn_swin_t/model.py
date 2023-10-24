@@ -18,6 +18,13 @@ pretrained = (
 
 model = dict(
     type="CustomMaskRCNN",
+    data_preprocessor=dict(
+        type="DetDataPreprocessor",
+        mean=[123.675, 116.28, 103.53],
+        std=[58.395, 57.12, 57.375],
+        bgr_to_rgb=True,
+        pad_size_divisor=32,
+    ),
     backbone=dict(
         type="SwinTransformer",
         embed_dims=96,
@@ -133,13 +140,16 @@ model = dict(
     ),
 )
 
-evaluation = dict(interval=1, metric="mAP", save_best="mAP", iou_thr=[0.5])
-optimizer = dict(
+param_scheduler = [
+    dict(type="LinearLR", start_factor=0.3333333333333333, by_epoch=False, begin=0, end=5),
+    dict(type="ReduceOnPlateauLR", monitor="pascal_voc/mAP", patience=4, begin=5, min_value=1e-8, rule="greater"),
+]
+
+optim_wrapper = dict(
     _delete_=True,
-    type="AdamW",
-    lr=0.0001,
-    betas=(0.9, 0.999),
-    weight_decay=0.05,
+    type="OptimWrapper",
+    optimizer=dict(type="AdamW", lr=0.0001, betas=(0.9, 0.999), weight_decay=0.05),
+    clip_grad=None,
     paramwise_cfg=dict(
         custom_keys=dict(
             absolute_pos_embed=dict(decay_mult=0.0),
@@ -148,10 +158,6 @@ optimizer = dict(
         )
     ),
 )
-
-lr_config = dict(min_lr=1e-08)
-
-optimizer_config = dict(_delete_=True, grad_clip=None)
 
 fp16 = dict(loss_scale=dict(init_scale=512))
 
