@@ -479,16 +479,14 @@ class MMDetectionTask(OTXDetectionTask):
             item.subset = Subset.TESTING
 
         self._data_cfg = ConfigDict(
-            data=ConfigDict(
-                train=ConfigDict(
-                    otx_dataset=None,
-                    labels=self._labels,
-                ),
-                test=ConfigDict(
-                    otx_dataset=dataset,
-                    labels=self._labels,
-                ),
-            )
+            train_dataloader=ConfigDict(
+                otx_dataset=None,
+                labels=self._labels,
+            ),
+            test_dataloader=ConfigDict(
+                otx_dataset=dataset,
+                labels=self._labels,
+            ),
         )
 
         self._init_task()
