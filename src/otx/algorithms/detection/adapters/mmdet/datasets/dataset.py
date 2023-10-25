@@ -14,7 +14,7 @@
 # See the License for the specific language governing permissions
 # and limitations under the License.
 
-from typing import Dict, List, Sequence, Tuple, Union
+from typing import Any, List, Sequence, Tuple, Union
 
 import numpy as np
 from mmcv.transforms import Compose
@@ -183,7 +183,7 @@ class OTXDetDataset(BaseDetDataset):
         # even if we need only checking aspect ratio of the image; due to it
         # this implementation of dataset does not uses such tricks as skipping images with wrong aspect ratios or
         # small image size, since otherwise reading the whole dataset during initialization will be required.
-        self.data_list = OTXDetDataset._DataInfoProxy(otx_dataset, labels)
+        self.data_list: Any = OTXDetDataset._DataInfoProxy(otx_dataset, labels)
 
         self.proposals = None  # Attribute expected by mmdet but not used for OTX datasets
 
@@ -288,22 +288,14 @@ class ImageTilingDataset(OTXDetDataset):
         self.pipeline = Compose(pipeline)
         self.test_mode = test_mode
         self.num_samples = len(self.dataset)  # number of original samples
+        self._metainfo = self.dataset.metainfo
+        self.serialize_data = None  # OTX has own data caching mechanism
+        self.data_list = self.tile_dataset
+        self.max_refetch = self.dataset.max_refetch
 
     def __len__(self) -> int:
         """Get the length of the dataset."""
         return len(self.tile_dataset)
-
-    def __getitem__(self, idx: int) -> Dict:
-        """Get training/test tile.
-
-        Args:
-            idx (int): Index of data.
-
-        Returns:
-            dict: Training/test data (with annotation if `test_mode` is set
-            True).
-        """
-        return self.pipeline(self.tile_dataset[idx])
 
     def get_ann_info(self, idx):
         """Get annotation information of a tile.

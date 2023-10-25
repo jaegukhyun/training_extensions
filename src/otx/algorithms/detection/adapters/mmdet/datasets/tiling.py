@@ -146,7 +146,7 @@ class Tile:
         if "gt_masks" in result and len(result["gt_masks"]) > num:
             indices = np.random.choice(len(result["gt_bboxes"]), size=num, replace=False)
             result["gt_bboxes"] = result["gt_bboxes"][indices]
-            result["gt_labels"] = result["gt_labels"][indices]
+            result["gt_bboxes_labels"] = result["gt_bboxes_labels"][indices]
             result["gt_masks"] = result["gt_masks"][indices]
 
     def gen_single_img(self, result: Dict, dataset_idx: int) -> Dict:
@@ -166,7 +166,9 @@ class Tile:
         result["original_shape_"] = result["img_shape"]
         result["uuid"] = str(uuid.uuid4())
         result["gt_bboxes"] = result["gt_bboxes"] if "gt_bboxes" in result else np.zeros((0, 4), dtype=np.float32)
-        result["gt_labels"] = result["gt_labels"] if "gt_labels" in result else np.array([], dtype=int)
+        result["gt_bboxes_labels"] = (
+            result["gt_bboxes_labels"] if "gt_bboxes_labels" in result else np.array([], dtype=int)
+        )
         result["gt_masks"] = result["gt_masks"] if "gt_masks" in result else []
         return result
 
@@ -185,8 +187,8 @@ class Tile:
         self.random_select_gt(result, self.max_annotation)
         gt_bboxes = result.get("gt_bboxes", np.zeros((0, 4), dtype=np.float32))
         gt_masks = result.get("gt_masks", None)
-        gt_bboxes_ignore = result.get("gt_bboxes_ignore", np.zeros((0, 4), dtype=np.float32))
-        gt_labels = result.get("gt_labels", np.array([], dtype=np.int64))
+        gt_bboxes_labels = result.get("gt_bboxes_labels", np.array([], dtype=np.int64))
+        gt_ignore_flags = result.get("gt_ignore_flags", np.array([], dtype=np.bool))
         img_shape = result.get("img_shape")
         height, width = img_shape[:2]
         _tile = self.prepare_result(result)
@@ -211,11 +213,17 @@ class Tile:
             tile["img_shape"] = tile["ori_shape"]
             tile["tile_box"] = (x_1, y_1, x_2, y_2)
             tile["dataset_idx"] = dataset_idx
-            tile["gt_bboxes_ignore"] = gt_bboxes_ignore
             tile["uuid"] = str(uuid.uuid4())
-            self.tile_ann_assignment(tile, np.array([[x_1, y_1, x_2, y_2]]), gt_bboxes, gt_masks, gt_labels)
+            self.tile_ann_assignment(
+                tile,
+                np.array([[x_1, y_1, x_2, y_2]]),
+                gt_bboxes,
+                gt_masks,
+                gt_bboxes_labels,
+                gt_ignore_flags,
+            )
             # filter empty ground truth
-            if self.filter_empty_gt and len(tile["gt_labels"]) == 0:
+            if self.filter_empty_gt and len(tile["gt_bboxes_labels"]) == 0:
                 continue
             tile_list.append(tile)
         if dataset_idx == 0:
@@ -239,6 +247,8 @@ class Tile:
             mask_fields=result["mask_fields"],
             seg_fields=result["seg_fields"],
             img_fields=result["img_fields"],
+            width=self.tile_size,
+            height=self.tile_size,
         )
         return result_template
 
@@ -248,7 +258,8 @@ class Tile:
         tile_box: np.ndarray,
         gt_bboxes: np.ndarray,
         gt_masks: BitmapMasks,
-        gt_labels: np.ndarray,
+        gt_bboxes_labels: np.ndarray,
+        gt_ignore_flags: np.ndarray,
     ):
         """Assign new annotation to this tile.
 
@@ -260,13 +271,14 @@ class Tile:
             tile_box (np.ndarray): the coordinate for this tile box (i.e. the tile coordinate relative to the image)
             gt_bboxes (np.ndarray): the original image-level boxes
             gt_masks (BitmapMasks): the original image-level masks
-            gt_labels (np.ndarray): the original image-level labels
+            gt_bboxes_labels (np.ndarray): the original image-level labels
+            gt_ignore_flags (np.ndarray): the flags for whether ignore or not
         """
         x_1, y_1 = tile_box[0][:2]
         matched_indices = self.tile_boxes_overlap(tile_box, gt_bboxes)
 
         if len(matched_indices):
-            tile_lables = gt_labels[matched_indices][:]
+            tile_lables = gt_bboxes_labels[matched_indices][:]
             tile_bboxes = gt_bboxes[matched_indices][:]
             tile_bboxes[:, 0] -= x_1
             tile_bboxes[:, 1] -= y_1
@@ -277,16 +289,18 @@ class Tile:
             tile_bboxes[:, 2] = np.minimum(self.tile_size, tile_bboxes[:, 2])
             tile_bboxes[:, 3] = np.minimum(self.tile_size, tile_bboxes[:, 3])
             tile_result["gt_bboxes"] = tile_bboxes
-            tile_result["gt_labels"] = tile_lables
+            tile_result["gt_bboxes_labels"] = tile_lables
             tile_result["gt_masks"] = gt_masks[matched_indices].crop(tile_box[0]) if gt_masks is not None else []
+            tile_result["gt_ignore_flags"] = gt_ignore_flags[matched_indices]
         else:
             tile_result.pop("bbox_fields")
             tile_result.pop("mask_fields")
             tile_result.pop("seg_fields")
             tile_result.pop("img_fields")
             tile_result["gt_bboxes"] = np.zeros((0, 4), dtype=np.float32)
-            tile_result["gt_labels"] = np.array([], dtype=int)
+            tile_result["gt_bboxes_labels"] = np.array([], dtype=int)
             tile_result["gt_masks"] = []
+            tile_result["gt_ignore_flags"] = np.array([], dtype=np.bool)
 
         if gt_masks is None:
             tile_result.pop("gt_masks")
@@ -483,8 +497,8 @@ class Tile:
             ann["bboxes"] = self.tiles[idx]["gt_bboxes"]
         if "gt_masks" in self.tiles[idx]:
             ann["masks"] = self.tiles[idx]["gt_masks"]
-        if "gt_labels" in self.tiles[idx]:
-            ann["labels"] = self.tiles[idx]["gt_labels"]
+        if "gt_bboxes_labels" in self.tiles[idx]:
+            ann["labels"] = self.tiles[idx]["gt_bboxes_labels"]
         return ann
 
     def merge_vectors(self, feature_vectors: List[np.ndarray]) -> np.ndarray:

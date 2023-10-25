@@ -123,8 +123,8 @@ def patch_tiling(config, hparams, dataset=None):
 
             config.data.train.filter_empty_gt = False
 
-        config.data.train.sampling_ratio = hparams.tiling_parameters.tile_sampling_ratio
-        config.data.val.sampling_ratio = hparams.tiling_parameters.tile_sampling_ratio
+        config.train_dataloader.dataset.sampling_ratio = hparams.tiling_parameters.tile_sampling_ratio
+        config.val_dataloader.dataset.sampling_ratio = hparams.tiling_parameters.tile_sampling_ratio
         if hparams.tiling_parameters.tile_sampling_ratio < 1.0:
             config.custom_hooks.append(ConfigDict({"type": "TileSamplingHook"}))
 
