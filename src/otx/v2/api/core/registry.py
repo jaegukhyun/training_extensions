@@ -31,7 +31,7 @@ class BaseRegistry:
             module_type (str): The type of the module to retrieve.
 
         Returns:
-            Optional[Callable]: The module if found, otherwise None.
+            object | Callable | None: The module if found, otherwise None.
         """
         # Return Registry
         if module_type in self._registry_dict:

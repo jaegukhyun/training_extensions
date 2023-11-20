@@ -123,8 +123,8 @@ class TestMMSegAPI:
             checkpoint=results["checkpoint"],
             img=TASK_CONFIGURATION["classification"]["sample"],
         )
-        assert isinstance(pred_result, dict)
-        assert isinstance(pred_result["predictions"], np.ndarray)
+        assert isinstance(pred_result, list)
+        assert len(pred_result) == 1
 
         # Export Openvino IR Model
         export_output = engine.export(

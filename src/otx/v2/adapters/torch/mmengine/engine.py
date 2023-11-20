@@ -11,9 +11,13 @@ from copy import deepcopy
 from pathlib import Path
 from typing import TYPE_CHECKING
 
+import cv2
+import numpy as np
 import torch
+from mmcv.transforms import Compose
 from mmengine.device import get_device
 from mmengine.runner import Runner
+from mmengine.runner.checkpoint import load_checkpoint
 
 from otx.v2.adapters.torch.mmengine.mmdeploy import AVAILABLE
 from otx.v2.adapters.torch.mmengine.modules.utils.config_utils import CustomConfig as Config
@@ -28,6 +32,7 @@ if TYPE_CHECKING:
     from mmengine.evaluator import Evaluator
     from mmengine.hooks import Hook
     from mmengine.optim import _ParamScheduler
+    from mmengine.registry import Registry
     from mmengine.visualization import Visualizer
     from torch.optim import Optimizer
     from torch.utils.data import DataLoader
@@ -500,6 +505,96 @@ class MMXEngine(Engine):
         self.dumped_config = dump_lazy_config(config=config, scope=self.registry.name)
 
         return self.runner.test()
+
+    def predict(
+        self,
+        model: torch.nn.Module | (dict | str),
+        img: str | (np.ndarray | list),
+        checkpoint: str | Path | None = None,
+        pipeline: list | None = None,
+        device: str | torch.device = "cpu",
+        batch_size: int = 1,
+    ) -> list[dict]:
+        """Runs inference on the given input image(s) using the specified model and checkpoint.
+
+        Args:
+            model (torch.nn.Module | dict | str): The model to use for inference. Can be a
+                PyTorch module, a dictionary containing the model configuration, or a string representing the path to
+                the model checkpoint file.
+            img (str | np.ndarray | list): The input image(s) to run inference on. Can be a
+                string representing the path to the image file, a NumPy array containing the image data, or a list of
+                NumPy arrays containing multiple images.
+            checkpoint (str | Path | None): The path to the checkpoint file to use for inference.
+                It could be None if the model already load checkpoint by itself. Defaults to None.
+            pipeline (list | None): The data pipeline to use for inference.
+                A list of dictionaries containing multiple pipeline configurations. Defaults to None.
+            device (str | torch.device): The device to use for inference. Can be a string
+                representing the device name (e.g. 'cpu' or 'cuda'), a PyTorch device object.
+                Defaults to cpu.
+            batch_size (int): The batch size to use for inference. Defaults to 1.
+
+        Returns:
+            List[Dict]: A list of dictionaries containing the inference results.
+        """
+        # Model config need data_pipeline of test_dataloader
+        # Update pipelines
+        if pipeline is None:
+            packing_transforms = {
+                TaskType.CLASSIFICATION: "PackInputs",
+                TaskType.DETECTION: "PackDetInputs",
+                TaskType.SEGMENTATION: "PackSegInputs",
+            }
+            pipeline = [
+                {"type": "LoadImageFromNDArray"},
+                {"type": "Resize", "scale": (512, 512)},
+                {
+                    "type": packing_transforms[self.task],
+                    "meta_keys": ["img", "img_shape", "scale_factor", "ori_shape"],
+                },
+            ]
+        test_pipeline = Compose(pipeline)
+
+        if isinstance(model, dict):
+            model_registry: Registry = self.registry.get("model")
+            torch_model = model_registry.build(model)
+        elif isinstance(model, torch.nn.Module):
+            torch_model = model
+        else:
+            error_message = f"{type(model)} is not supported"
+            # TODO (Jaeguk): Implement when the model is string.  # noqa: TD003
+            raise NotImplementedError(error_message)
+        if checkpoint is not None:
+            load_checkpoint(torch_model, str(checkpoint))
+        torch_model.to(device)
+
+        if isinstance(img, str):
+            np_imgs = [cv2.cvtColor(cv2.imread(img), cv2.COLOR_BGR2RGB)]
+        elif isinstance(img, np.ndarray):
+            np_imgs = [img]
+        else:
+            np_imgs = img
+
+        outputs = []
+        batch_data: dict[str, list] = {"inputs": [], "data_samples": []}
+        for np_img in np_imgs:
+            data = {"img": np_img}
+            data = test_pipeline(data)
+            # Convert single data to batch
+            if len(batch_data["inputs"]) == 0:
+                batch_data = {"inputs": [data["inputs"].to(device)], "data_samples": [data["data_samples"]]}
+            else:
+                batch_data["inputs"].append(data["inputs"].to(device))
+                batch_data["data_samples"].append(data["data_samples"])
+            if len(batch_data["inputs"]) == batch_size:
+                with torch.no_grad():
+                    outputs.extend(torch_model.test_step(batch_data))
+                batch_data = {"inputs": [], "data_samples": []}
+        if len(batch_data["inputs"]) > 0:
+            # Last batch
+            with torch.no_grad():
+                outputs.extend(torch_model.test_step(batch_data))
+
+        return outputs
 
     def export(
         self,

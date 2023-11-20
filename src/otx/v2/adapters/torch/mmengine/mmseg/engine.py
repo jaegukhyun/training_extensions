@@ -5,11 +5,11 @@
 
 from __future__ import annotations
 
-from pathlib import Path
 from typing import TYPE_CHECKING
 
-import torch
-from mmseg.apis import MMSegInferencer
+if TYPE_CHECKING:
+    from pathlib import Path
+
 from mmseg.registry import VISUALIZERS
 
 from otx.v2.adapters.torch.mmengine.engine import MMXEngine
@@ -17,9 +17,6 @@ from otx.v2.adapters.torch.mmengine.mmseg.registry import MMSegmentationRegistry
 from otx.v2.adapters.torch.mmengine.modules.utils.config_utils import CustomConfig as Config
 from otx.v2.api.entities.task_type import TaskType
 from otx.v2.api.utils.logger import get_logger
-
-if TYPE_CHECKING:
-    import numpy as np
 
 logger = get_logger()
 
@@ -59,59 +56,3 @@ class MMSegEngine(MMXEngine):
         if hasattr(config, "visualizer") and config.visualizer.type not in VISUALIZERS:
             config.visualizer = self.visualizer_cfg
         return config, update_check
-
-    def predict(
-        self,
-        model: torch.nn.Module | (dict | str) | None = None,
-        img: str | (np.ndarray | list) | None = None,
-        checkpoint: str | Path | None = None,
-        pipeline: dict | list | None = None,
-        device: str | (torch.device | None) = None,
-        batch_size: int = 1,
-        **kwargs,
-    ) -> list[dict]:
-        """Runs inference on the given input image(s) using the specified model and checkpoint.
-
-        Args:
-            model (Optional[Union[torch.nn.Module, Dict, str]], optional): The model to use for inference. Can be a
-                PyTorch module, a dictionary containing the model configuration, or a string representing the path to
-                the model checkpoint file. Defaults to None.
-            img (Optional[Union[str, np.ndarray, list]], optional): The input image(s) to run inference on. Can be a
-                string representing the path to the image file, a NumPy array containing the image data, or a list of
-                NumPy arrays containing multiple images. Defaults to None.
-            checkpoint (Optional[Union[str, Path]], optional): The path to the checkpoint file to use for inference.
-                Defaults to None.
-            pipeline (Optional[Union[Dict, List]], optional): The data pipeline to use for inference. Can be a
-                dictionary containing the pipeline configuration, or a list of dictionaries containing multiple
-                pipeline configurations. Defaults to None.
-            device (Union[str, torch.device, None], optional): The device to use for inference. Can be a string
-                representing the device name (e.g. 'cpu' or 'cuda'), a PyTorch device object, or None to use the
-                default device. Defaults to None.
-            batch_size (int, optional): The batch size to use for inference. Defaults to 1.
-            **kwargs: Additional keyword arguments to pass to the inference function.
-
-        Returns:
-            List[Dict]: A list of dictionaries containing the inference results.
-        """
-        # Model config need data_pipeline of test_dataloader
-        # Update pipelines
-        if pipeline is None:
-            pipeline = [
-                {"type": "LoadImageFromFile"},
-                {"type": "Resize", "scale": (544, 544)},
-                {"type": "PackSegInputs", "_scope_": "mmseg"},
-            ]
-        config = Config({})
-        if isinstance(model, torch.nn.Module) and hasattr(model, "_config"):
-            config = model._config  # noqa: SLF001
-        elif isinstance(model, dict) and "_config" in model:
-            config = model["_config"]
-        config["test_dataloader"] = {"dataset": {"pipeline": pipeline}}
-
-        # Check if the model can use mmseg's inference api.
-        if isinstance(checkpoint, Path):
-            checkpoint = str(checkpoint)
-
-        inferencer = MMSegInferencer(model=config, weights=checkpoint, device=device)
-
-        return inferencer(img, batch_size=batch_size, **kwargs)

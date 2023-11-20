@@ -5,10 +5,11 @@
 
 from __future__ import annotations
 
-from pathlib import Path
 from typing import TYPE_CHECKING
 
-import torch
+if TYPE_CHECKING:
+    from pathlib import Path
+
 from mmdet.registry import VISUALIZERS
 
 from otx.v2.adapters.torch.mmengine.engine import MMXEngine
@@ -16,9 +17,6 @@ from otx.v2.adapters.torch.mmengine.mmdet.registry import MMDetRegistry
 from otx.v2.adapters.torch.mmengine.modules.utils.config_utils import CustomConfig as Config
 from otx.v2.api.entities.task_type import TaskType
 from otx.v2.api.utils.logger import get_logger
-
-if TYPE_CHECKING:
-    import numpy as np
 
 logger = get_logger()
 
@@ -62,84 +60,3 @@ class MMDetEngine(MMXEngine):
                 if hasattr(scheduler, "begin") and scheduler.begin > max_epochs:
                     scheduler.begin = max_epochs - 1
         return config, update_check
-
-    def predict(
-        self,
-        model: torch.nn.Module | (dict | str) | None = None,
-        img: str | (np.ndarray | list) | None = None,
-        checkpoint: str | Path | None = None,
-        pipeline: dict | list | None = None,
-        device: str | (torch.device | None) = None,
-        task: str | None = None,
-        batch_size: int = 1,
-        **kwargs,
-    ) -> list[dict]:
-        """Runs inference on the given input image(s) using the specified model and checkpoint.
-
-        Args:
-            model (torch.nn.Module, dict, str, None, optional): The model to use for inference. Can be a
-                PyTorch module, a dictionary containing the model configuration, or a string representing the path to
-                the model checkpoint file. Defaults to None.
-            img (str, np.ndarray, list, None, optional): The input image(s) to run inference on. Can be a
-                string representing the path to the image file, a NumPy array containing the image data, or a list of
-                NumPy arrays containing multiple images. Defaults to None.
-            checkpoint (str, Path, None, optional): The path to the checkpoint file to use for inference.
-                Defaults to None.
-            pipeline (dict, list, None, optional): The data pipeline to use for inference. Can be a
-                dictionary containing the pipeline configuration, or a list of dictionaries containing multiple
-                pipeline configurations. Defaults to None.
-            device (str, torch.device, None, optional): The device to use for inference. Can be a string
-                representing the device name (e.g. 'cpu' or 'cuda'), a PyTorch device object, or None to use the
-                default device. Defaults to None.
-            task (str, None, optional): The type of task to perform. Defaults to None.
-            batch_size (int): The batch size to use for inference. Defaults to 1.
-            **kwargs: Additional keyword arguments to pass to the inference function.
-
-        Returns:
-            list[dict]: A list of dictionaries containing the inference results.
-        """
-        import cv2
-        from mmcv.transforms import Compose
-        from mmdet.apis import DetInferencer, inference_detector
-        from mmengine.model import BaseModel
-
-        del task  # This variable is not used.
-
-        # Model config need data_pipeline of test_dataloader
-        # Update pipelines
-        if pipeline is None:
-            pipeline = [
-                {"type": "Resize", "scale": [512, 512]},
-                {"type": "PackDetInputs", "meta_keys": ['img', 'img_id', 'scale', 'img_shape', 'scale_factor']},
-            ]
-
-        cfg = Config({})
-        if isinstance(model, torch.nn.Module) and hasattr(model, "cfg"):
-            cfg = model.cfg
-        elif isinstance(model, dict) and "cfg" in model:
-            cfg = model["cfg"]
-        cfg["test_dataloader"] = {"dataset": {"pipeline": pipeline}}
-        if isinstance(model, dict):
-            model.setdefault("cfg", cfg)
-        elif isinstance(model, torch.nn.Module):
-            model.cfg = cfg
-
-        # Check if the model can use mmdet's inference api.
-        if isinstance(checkpoint, Path):
-            checkpoint = str(checkpoint)
-        if isinstance(model, BaseModel):
-            if isinstance(img, str):
-                img = cv2.cvtColor(cv2.imread(img), cv2.COLOR_BGR2RGB)
-            inputs = {
-                "model": model,
-                "imgs": img,
-                "test_pipeline": Compose(pipeline),
-            }
-            return [inference_detector(**inputs, **kwargs)]
-        inferencer = DetInferencer(
-            model=model,
-            weights=checkpoint,
-            device=device,
-        )
-
-        return inferencer(img, batch_size, **kwargs)
