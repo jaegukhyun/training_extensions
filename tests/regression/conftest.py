@@ -10,11 +10,10 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from urllib.parse import urlparse
 
+import mlflow
 import pytest
 from cpuinfo import get_cpu_info
 from otx import __version__
-
-import mlflow
 
 log = logging.getLogger(__name__)
 

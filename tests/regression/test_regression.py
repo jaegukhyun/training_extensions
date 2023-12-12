@@ -7,10 +7,9 @@ from __future__ import annotations
 from dataclasses import dataclass
 from pathlib import Path
 
+import mlflow
 import pytest
 from otx.cli.train import otx_train
-
-import mlflow
 
 
 @dataclass
