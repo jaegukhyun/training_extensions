@@ -48,8 +48,8 @@ class LoadVideoForClassification:
 class LoadVideoForDetection:
     """Class to convert OTXDataEntity to dict for MMAction framework."""
 
-    fps: int = 30
-    timestamp_start: int = 900
+    fps: int = 1
+    timestamp_start: int = 1
 
     def __call__(self, entity: ActionDetDataEntity) -> dict:
         """Transform ActionClsDataEntity to MMAction data dictionary format."""
