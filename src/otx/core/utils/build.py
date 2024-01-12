@@ -75,10 +75,10 @@ def get_classification_layers(
         Normally it is related with background classes.
     """
     sample_config = deepcopy(config)
-    modify_num_classes(sample_config, 5)
+    modify_num_classes(sample_config, 10)
     sample_model_dict = build_mm_model(sample_config, model_registry, None).state_dict()
 
-    modify_num_classes(sample_config, 6)
+    modify_num_classes(sample_config, 11)
     incremental_model_dict = build_mm_model(sample_config, model_registry, None).state_dict()
 
     classification_layers = {}
@@ -87,7 +87,7 @@ def get_classification_layers(
             sample_model_dim = sample_model_dict[key].shape[0]
             incremental_model_dim = incremental_model_dict[key].shape[0]
             stride = incremental_model_dim - sample_model_dim
-            num_extra_classes = 6 * sample_model_dim - 5 * incremental_model_dim
+            num_extra_classes = 11 * sample_model_dim - 10 * incremental_model_dim
             classification_layers[prefix + key] = {"stride": stride, "num_extra_classes": num_extra_classes}
     return classification_layers
 

@@ -110,7 +110,7 @@ class MMActionCompatibleModel(OTXActionDetModel):
 
             losses = OTXBatchLossEntity()
             for k, v in outputs.items():
-                losses[k] = v
+                losses[k.replace("@", "_")] = v
             return losses
 
         scores = []
