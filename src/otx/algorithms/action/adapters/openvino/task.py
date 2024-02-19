@@ -224,6 +224,9 @@ class ActionOpenVINOTask(IDeploymentTask, IInferenceTask, IEvaluationTask, IOpti
         elif self.task_type == "ACTION_DETECTION":
             output_resultset.performance = MetricsHelper.compute_f_measure(output_resultset).get_performance()
 
+        logger.info(f"Evaluation score: {output_resultset.performance}")
+        logger.info("OpenVINO metric evaluation completed")
+
     def deploy(self, output_model: ModelEntity) -> None:
         """Deploy function of OpenVINOTask."""
 

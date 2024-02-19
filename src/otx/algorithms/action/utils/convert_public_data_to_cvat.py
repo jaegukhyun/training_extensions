@@ -189,6 +189,8 @@ def convert_action_cls_dataset_to_datumaro(src_path: str, dst_path: str, ann_fil
             frame_list.sort()
 
             # Generate default CVAT XML fields for the video annotation
+            if len(frame_list) == 0:
+                continue
             annotations, img_shape, labels = generate_default_cvat_xml_fields(i, video_path, frame_list)
 
             # Add the video label to the annotations
