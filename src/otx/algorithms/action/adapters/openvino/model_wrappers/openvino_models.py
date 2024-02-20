@@ -37,7 +37,7 @@ def softmax_numpy(x: np.ndarray):
     return x
 
 
-def get_multiclass_predictions(logits: np.ndarray, activate: bool = True):
+def get_multiclass_predictions(logits: np.ndarray, activate: bool = False):
     """Get multiclass predictions."""
     index = np.argmax(logits)
     if activate:
