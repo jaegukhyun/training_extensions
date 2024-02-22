@@ -181,7 +181,8 @@ def convert_action_cls_dataset_to_datumaro(src_path: str, dst_path: str, ann_fil
 
             # Prepare the output directories and file names
             video_path = osp.join(src_path, video_dir)
-            video_name = f"Video_{i}"
+            # video_name = f"Video_{i}"
+            video_name = video_dir
             images_dir = osp.join(dst_path, f"{video_name}/images")
 
             # List the frames in the video and sort them

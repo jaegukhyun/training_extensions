@@ -66,15 +66,31 @@ def convert_data():
             row["Weld fault"]
             split = row["Split"]
             if not os.path.exists(f"./data/frames/{video_file_name}"):
+                print(f"Warning: {video_file_name} do not exists in frames folder.")
                 continue
             if abnormal_start_time == "N/A":
-                src = f"./data/frames/{video_file_name}"
-                dst = f"./data/intermediate/rawframes/{video_file_name}"
-                os.system(f"cp -r {src} {dst}")
+                start_frame = video_start_time * 30
+                end_frame = video_end_time * 30
+                os.makedirs(f"./data/intermediate/rawframes/{video_file_name}_0")
+                for seq in range(1, start_frame):
+                    src = f"./data/frames/{video_file_name}/image_{seq:05d}.jpg"
+                    dst = f"./data/intermediate/rawframes/{video_file_name}_0/image_{seq:05d}.jpg"
+                    os.system(f"cp {src} {dst}")
                 if split == "training":
-                    train_txt.write(f"{video_file_name} {video_end_time * 30} 0\n")
+                    train_txt.write(f"{video_file_name}_0 {len(range(1, start_frame))}, 0\n")
                 else:
-                    val_txt.write(f"{video_file_name} {video_end_time * 30} 0\n")
+                    val_txt.write(f"{video_file_name}_0 {len(range(1, start_frame))}, 0\n")
+
+                os.makedirs(f"./data/intermediate/rawframes/{video_file_name}_1")
+                for seq in range(start_frame, end_frame):
+                    src = f"./data/frames/{video_file_name}/image_{seq:05d}.jpg"
+                    dst = f"./data/intermediate/rawframes/{video_file_name}_1/image_{seq:05d}.jpg"
+                    os.system(f"cp {src} {dst}")
+                if split == "training":
+                    train_txt.write(f"{video_file_name}_1 {len(range(start_frame, end_frame))}, 1\n")
+                else:
+                    val_txt.write(f"{video_file_name}_1 {len(range(start_frame, end_frame))}, 1\n")
+
             else:
                 start_frame = video_start_time * 30
                 end_frame = video_end_time * 30
@@ -111,8 +127,8 @@ def convert_data():
 
     with open("./data/intermediate/label_map.txt", "w") as label_txt:
         label_txt.write("no action\n")
-        label_txt.write("abnormal\n")
         label_txt.write("normal\n")
+        label_txt.write("abnormal\n")
 
     print("Done")
     print("Converting to CVAT format")
