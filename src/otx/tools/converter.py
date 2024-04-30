@@ -198,6 +198,10 @@ class ConfigConverter:
         if param_dict.get("enable_tiling", None) and not task_info["model_name"].endswith("_tile"):
             task_info["model_name"] += "_tile"
         default_config = ConfigConverter._get_default_config(task_info)
+        default_config["data"]["config"]["data_format"] = "arrow"
+        default_config["data"]["config"]["train_subset"]["subset_name"] = "TRAINING"
+        default_config["data"]["config"]["val_subset"]["subset_name"] = "VALIDATION"
+        default_config["data"]["config"]["test_subset"]["subset_name"] = "TESTING"
         ConfigConverter._update_params(default_config, param_dict)
         ConfigConverter._remove_unused_key(default_config)
         return default_config
